@@ -1,0 +1,170 @@
+/// **********************************************************************************************
+
+// G4double NeuPos = 0.;
+// G4double GamPos = 0.;
+// G4Box* miniSDsol = new G4Box("NeutronSD_solid", //Name
+// collimatorW/2, //half length
+// collimatorH/2,
+// Detthick/2);
+// neutronSDLog = new G4LogicalVolume(miniSDsol, //its solid
+// DefaultMat, //its material
+// "NeutronSD"); //its name
+// gammaSDLog = new G4LogicalVolume(miniSDsol, //its solid
+// DefaultMat, //its material
+// "GammaSD"); //its name
+
+// for(G4int i=0;i<NbOfDetector;i++)
+// {
+// if(i<2)
+// {
+// NeuPos = Distance - 1.5*Detthick + (collimatorL + 2*Detthick)*i;
+// GamPos = Distance - 0.5*Detthick + (collimatorL + 2*Detthick)*i;
+// }
+// else
+// {
+// NeuPos = 2500*mm - 1.5*Detthick;
+// GamPos = 2500*mm - 0.5*Detthick;
+// }
+
+
+// new G4PVPlacement(0,
+// G4ThreeVector(0,CollimatorYMov,NeuPos),
+// neutronSDLog,
+// "NeutronSD",
+// WorldLog,
+// false,
+// i,
+// fCheckOverlap);
+// new G4PVPlacement(0,
+// G4ThreeVector(0,-CollimatorYMov,GamPos),
+// gammaSDLog,
+// "GammaSD",
+// WorldLog,
+// false,
+// i,
+// fCheckOverlap);
+// }
+
+
+      // Create sensitive detectors: 1mm hemispherical shells at 2.5m.
+      //--Neutron Detector
+// G4double innerRadius = 2.499*m;
+// G4double outerRadius = 2.500*m;
+// G4double azStart = 0.;
+// G4double azDelta = 360.*deg;
+// G4double elStart = 0.;
+// G4double elDelta = 90.*deg;
+// /// @todo Check - should this be a G4VSolid* or a G4Sphere* ?
+// G4VSolid*        nSphereSolid= new G4Sphere("NeutronSphere",
+// innerRadius,outerRadius,
+// azStart,azDelta,
+// elStart,elDelta);
+// neutronSDLog        =        new        G4LogicalVolume(nSphereSolid,DefaultMat,"NeutronSphere");
+// /// @todo Check: is this bare new correct?
+// new G4PVPlacement(0,G4ThreeVector(0,0,0),neutronSDLog,"NeutronSphere",
+// WorldLog,false,0,fCheckOverlap);
+// //--Gamma Detector
+// innerRadius = 2.500*m;
+// outerRadius = 2.501*m;
+// /// @todo Check - should this be a G4VSolid* or a G4Sphere* ?
+// G4VSolid* gSphereSolid = new G4Sphere("GammaSphere",
+// innerRadius,outerRadius,
+// azStart,azDelta,
+// elStart,elDelta);
+// gammaSDLog = new G4LogicalVolume(gSphereSolid,DefaultMat,"GammaSphere");
+// /// @todo Check: is this bare new correct?
+// new G4PVPlacement(0,G4ThreeVector(0,0,0),gammaSDLog,"GammaSphere",
+// WorldLog,false,0,fCheckOverlap);
+
+//**************************************** ANITA End ********************************************//
+
+//**************************************** LANSCE Model *****************************************//
+// //---------Geometry being used in this project ----------//
+// // World, box,full length=41.1 meter
+// G4double fWorldLength=41*m;
+// //------------------------------world volume (shape: box)
+// G4Box* WorldSolid = new G4Box("World_solid", //Name
+// fWorldLength/2, //half length
+// fWorldLength/2,
+// fWorldLength/2);
+
+// WorldLog = new G4LogicalVolume(WorldSolid, // Solid
+// Air, // filled material
+// "World_log");
+
+// WorldPhy = new G4PVPlacement (0, // Rotation matrix
+// G4ThreeVector(), // Position (0,0,0)
+// WorldLog, // Logical volume
+// "World_phys", // Name
+// 0, // Mother volume
+// false, // unused boolean
+// 0, // copy number
+// fCheckOverlap); // checking overlaps
+
+
+////-------------Target cylindar--------------------------------------//
+// // target tube, diameter 3*cm,height 7cm
+// G4double TargetInR=0.*cm;
+// G4double TargetOutR=1.5*cm;
+// G4double TargetHeight=7*cm;
+
+// G4Tubs* Target_tubs = new G4Tubs ("TargetSolid", //Name
+// TargetInR, //Inner radius
+// TargetOutR, //Outer radius
+// TargetHeight/2, // Half length in z
+// 0.*deg, // Starting phi angle
+// 360.*deg); // Segment angle
+
+// TargetLog = new G4LogicalVolume (Target_tubs,
+// TargetMat,
+// "TargetLog");
+// new G4PVPlacement (0,
+// G4ThreeVector(0.,0.,0.),
+// TargetLog,
+// "TargetPhy",
+// WorldLog,
+// false,
+// 0,
+// fCheckOverlap);
+//// print parameters
+////
+// //        print        parameters
+// G4cout        <<        "\n------------------------------------------------------------"
+// <<        "\n--->        The        Target        is        consist        of        "        <<        TargetMat->GetName()        <<        '\n'
+// <<        "        The        World        space        is        filled        with        "<<        Air->GetName()        <<        G4endl;
+
+////--------------------------------------------------------------------------------------
+
+// // Create sensitive detectors: 1mm hemispherical shells at 20m.
+// //--Neutron Detector
+// G4double innerRadius = 19.999*m;
+// G4double outerRadius = 20.0*m;
+// G4double azStart = 0.;
+// G4double azDelta = 360.*deg;
+// G4double elStart = 0.;
+// G4double elDelta = 90.*deg;
+// /// @todo Check - should this be a G4VSolid* or a G4Sphere* ?
+// G4VSolid*        nSphereSolid= new G4Sphere("NeutronSphere",
+// innerRadius,outerRadius,
+// azStart,azDelta,
+// elStart,elDelta);
+// neutronSDLog        =        new        G4LogicalVolume(nSphereSolid,DefaultMat,"NeutronSphere");
+// /// @todo Check: is this bare new correct?
+// new G4PVPlacement(0,G4ThreeVector(0,0,0),neutronSDLog,"NeutronSphere",
+// WorldLog,false,0,fCheckOverlap);
+// //--Gamma Detector
+// innerRadius = 20.0*m;
+// outerRadius = 20.001*m;
+// /// @todo Check - should this be a G4VSolid* or a G4Sphere* ?
+// G4VSolid* gSphereSolid = new G4Sphere("GammaSphere",
+// innerRadius,outerRadius,
+// azStart,azDelta,
+// elStart,elDelta);
+// gammaSDLog = new G4LogicalVolume(gSphereSolid,DefaultMat,"GammaSphere");
+// /// @todo Check: is this bare new correct?
+// new G4PVPlacement(0,G4ThreeVector(0,0,0),gammaSDLog,"GammaSphere",
+// WorldLog,false,0,fCheckOverlap);
+//********************************************* LANSCE end *******************************************//
+
+
+
