@@ -5,6 +5,7 @@
 #include "globals.hh"
 #include "G4Timer.hh"
 
+// forward declarations
 class HistoManager;
 class G4Run;
 
@@ -13,23 +14,16 @@ class G4Run;
 class RunAction : public G4UserRunAction
 {
 public:
-       RunAction(HistoManager*);
-       virtual ~RunAction();
+       RunAction();
+       ~RunAction();
 public:
        void  BeginOfRunAction(const G4Run*);
        void    EndOfRunAction(const G4Run*);
-
-       void fillPerEvent(G4double, G4double, G4double, G4double);
 
 private:
        HistoManager* fanalysis;
        G4Timer*      myTimer;
 
-       G4double fSumEAbs, fSum2EAbs;
-       G4double fSumEGap, fSum2EGap;
-
-       G4double fSumLAbs, fSum2LAbs;
-       G4double fSumLGap, fSum2LGap;
 };
 
 #endif // RUNACTION_H

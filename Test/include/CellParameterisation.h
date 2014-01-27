@@ -14,8 +14,8 @@ class CellParameterisation : public G4VPVParameterisation
                    (const G4int copyNo,G4VPhysicalVolume *physVol) const;
 
   private:
-    G4double fXCell[100];
-    G4double fYCell[100];
+    G4double fXCell[80];
+    G4double fYCell[80];
 };
 
 #endif // CELLPARAMETERISATION_H

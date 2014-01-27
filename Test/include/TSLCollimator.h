@@ -22,8 +22,8 @@ public:
     // Constructor with parameters
     TSLCollimator(G4double ApertureDiameter,
                   G4double CollimatorWidth,
-                  G4double CollimatorLength,
                   G4double CollimatorHeight,
+                  G4double CollimatorLength,
                   G4Material * CollimatorMat,
                   G4VPhysicalVolume * MotherPV,
                   G4ThreeVector CollimatorPos,

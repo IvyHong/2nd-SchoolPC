@@ -6,13 +6,13 @@
 
 CellParameterisation::CellParameterisation()
 {
-  for(G4int copyNo=0;copyNo<100;copyNo++)
-  {
-    G4int column = copyNo / 10;
-    G4int row = copyNo % 10;
-    fXCell[copyNo] = (column-5)*20.4*mm + 10.2*mm;
-    fYCell[copyNo] = (row-5)*20.4*mm + 10.2*mm;
-  }
+    for(int copyNo=0;copyNo<80;copyNo++)
+    {
+      G4int column = copyNo / 4;
+      G4int row = copyNo % 4;
+      fXCell[copyNo] = (column-9)*15.*cm - 7.5*cm;
+      fYCell[copyNo] = (row-1)*15*cm - 7.5*cm;
+    }
 }
 
 CellParameterisation::~CellParameterisation()

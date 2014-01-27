@@ -1,0 +1,13 @@
+/run/beamOn 1
+
+#/analysis/setFileName MyFile_run1
+#/gun/energy 180 MeV
+#/run/beamOn 10
+
+#/analysis/setFileName MyFile_run2
+#/gun/energy 100 MeV
+#/run/beamOn 10
+
+#/analysis/setFileName MyFile_run3
+#/gun/energy 10 MeV
+#/run/beamOn 10

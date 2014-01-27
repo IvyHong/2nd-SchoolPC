@@ -1,5 +1,6 @@
 #include "G4RunManager.hh"
 #include "G4UImanager.hh"
+#include "Randomize.hh"
 
 #include "DetectorConstruction.h"
 #include "PhysicsList.h"
@@ -7,8 +8,7 @@
 
 #include "RunAction.h"
 #include "EventAction.h"
-#include "HistoManager.h"
-#include "Randomize.hh"
+
 
 #ifdef G4VIS_USE
 #include "G4VisExecutive.hh"
@@ -24,12 +24,14 @@
 int main(int argc,char** argv)
 {
 /// ****************** Random Number Generator Initialization **********
+  // CLHEP is used to generate randomize number
   // First to choose a engine, otherwise system will choose a
   // default engine HepJamesRandom
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
   // Set random seed
   G4long seed = time(NULL);
-  CLHEP::HepRandom::setTheSeed(seed);
+  G4int luxury = 3;   // RANLUX luxury level (3 is default)
+  CLHEP::HepRandom::setTheSeed(seed,luxury);
 
   // Eventhough,you run the same events, the simulation results will
   // be different
@@ -53,19 +55,17 @@ int main(int argc,char** argv)
   PhysicsList* physics = new PhysicsList();
   runManager->SetUserInitialization(physics);
 
-  // create an analysis manager object
-  HistoManager * analysis = new HistoManager();
-
   // mandatory user action class
   G4VUserPrimaryGeneratorAction* generator = new PrimaryGeneratorAction(detector);
   runManager->SetUserAction(generator);
 
   // optional user action classes
-  RunAction* RunAct = new RunAction(analysis);
+  RunAction* RunAct = new RunAction();
   runManager->SetUserAction(RunAct);
 
-  EventAction* EvAct = new EventAction(RunAct,analysis);
+  EventAction* EvAct = new EventAction();
   runManager->SetUserAction(EvAct);
+
 
   // initialize Geant4 kernel
   runManager->Initialize();
@@ -111,7 +111,7 @@ int main(int argc,char** argv)
 
       //Job termination
 
-  delete analysis;
+
   delete runManager;
 
   return 0;

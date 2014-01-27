@@ -2,62 +2,54 @@
 #define DETECTORCONSTRUCTION_H
 
 
-#include "G4VUserDetectorConstruction.hh"
 #include "globals.hh"
+#include "G4VUserDetectorConstruction.hh"
+#include "G4RotationMatrix.hh"
 
-class G4LogicalVolume;
 class G4VPhysicalVolume;
 class G4Material;
+class G4VSensitiveDetector;
+class G4VisAttributes;
 class TSLCollimator;
+//class DetectorConstMessenger;
 
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
-public:
+  public:
+    DetectorConstruction();
+    virtual ~DetectorConstruction();
 
-  // Constructor
-   DetectorConstruction();
-  // Destructor
-  virtual ~DetectorConstruction();
+    virtual G4VPhysicalVolume* Construct();
 
-  // Method
-  virtual G4VPhysicalVolume* Construct();
+    void ConstructMaterials();
+    void DestroyMaterials();
+    void DumpGeometricalTree(G4VPhysicalVolume* aVolume,G4int depth=0);
 
-  inline G4double GetWorldFullLength () const {return fWorldLength;}
-  inline G4double GetApertureDiameter() const {return apertureDia;}
-private:
+  private:
+//    DetectorConstMessenger* fMessenger;
+//  Li has a relatively high neutron absorption cross section via
+//  reaction : Li + n -> He + H
+    G4Material* fAir;
+    G4Material* fArgonGas;
+    G4Material* fScintillator;
+    G4Material* fCsI;
+    G4Material* fLead;
+    G4Material* fTungsten;
+    G4Material* fSteel;
 
-  // Method
-   void DefineMaterials();
-   G4VPhysicalVolume* SetupGeometry();
-   TSLCollimator* CollimatorGeometry;
+    G4VisAttributes* fWorldVisAtt;
+    G4VisAttributes* fArmVisAtt;
+    G4VisAttributes* fHodoscopeVisAtt;
+    G4VisAttributes* fChamberVisAtt;
+    G4VisAttributes* fWirePlaneVisAtt;
+    G4VisAttributes* fEMcalorimeterVisAtt;
+    G4VisAttributes* fCellVisAtt;
+    G4VisAttributes* fHadCalorimeterVisAtt;
+    G4VisAttributes* fHadCalorimeterCellVisAtt;
 
-   G4double fWorldLength;
-
-   G4double collimatorW; ///< Horizontal distance perpendicular to the beam axis.
-   G4double collimatorL; ///< Horizontal distance parallel to the beam axis.
-   G4double collimatorH; ///< Vertical distance perpendicular to the beam axis.
-   G4double apertureDia;
-   G4double Distance; ///< Horizontal distance from target to collimator front edge.
-
-   G4double Detthick;
-   G4int    NbOfDetector;
-   G4double collimatorYMov;
-
-  // Logical volumes;
-  //
-   G4LogicalVolume* WorldLog;
-   G4LogicalVolume* TargetLog;
-   G4LogicalVolume* neutronSD1Log;
-   G4LogicalVolume* neutronSD2Log;
-
-   G4VPhysicalVolume* WorldPhy;
-
-   G4bool fCheckOverlap;
-
-   G4Material* Air;
-   G4Material* TargetMat;
-   G4Material* DefaultMat;
-   G4Material* CollimatorMat;
-
+    TSLCollimator*     fCollimatorGeometry;
+    G4VPhysicalVolume* fSecondArmPhys;
 };
+
+
 #endif // DETECTORCONSTRUCTION_H

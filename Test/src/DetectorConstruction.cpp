@@ -1,271 +1,453 @@
 #include "DetectorConstruction.h"
-#include "TSLCollimator.h"
-#include "CellParameterisation.h"
 
-
-#include "globals.hh"
-#include "G4RunManager.hh"
-
-#include "G4Box.hh"
-#include "G4Tubs.hh"
-
-#include "G4LogicalVolume.hh"
-#include "G4PVPlacement.hh"
-#include "G4RotationMatrix.hh"
-#include "G4SubtractionSolid.hh"
-#include "G4Transform3D.hh"
-#include "G4ThreeVector.hh"
-
-#include "G4PVParameterised.hh"
+#include "G4TransportationManager.hh"
+#include "G4Mag_UsualEqRhs.hh"
 
 #include "G4Material.hh"
 #include "G4Element.hh"
 #include "G4MaterialTable.hh"
 #include "G4NistManager.hh"
 
-// Sensitivedetector
-#include "G4SDManager.hh"
-#include "NeutronSD.h"
+#include "G4VSolid.hh"
+#include "G4Box.hh"
+#include "G4Tubs.hh"
+#include "G4LogicalVolume.hh"
+#include "G4VPhysicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4PVParameterised.hh"
+#include "G4UserLimits.hh"
 
-// visualisation
+#include "G4SDManager.hh"
+#include "G4VSensitiveDetector.hh"
+#include "G4RunManager.hh"
+
 #include "G4VisAttributes.hh"
 #include "G4Colour.hh"
 
-#include "G4Region.hh"
-#include "G4RegionStore.hh"
+#include "G4ios.hh"
+#include "G4SystemOfUnits.hh"
+
+//#include "DetectorConstMessenger.h"
+
+#include "CellParameterisation.h"
+#include "TSLCollimator.h"
+#include "Hodoscope.h"
+#include "DriftChamber.h"
+#include "EmCalorimeter.h"
+
+#include "G4PVReplica.hh"
+#include "HadCalorimeter.h"
 
 DetectorConstruction::DetectorConstruction()
-    : CollimatorGeometry(0),
-      WorldLog(0),TargetLog(0),neutronSD1Log(0),neutronSD2Log(0),
-      WorldPhy(0),fCheckOverlap(true),
-      Air(0),TargetMat(0),DefaultMat(0),CollimatorMat(0)
-{
-    fWorldLength = 5048*mm;
-    collimatorW = 1200*mm;
-    collimatorL = 1000*mm;
-    collimatorH = 2402*mm;
-    apertureDia = 102 *mm;
-    Distance = 867*mm;
-    Detthick = 1*mm;
-    NbOfDetector = 3;
-    collimatorYMov = 296*mm;
-}
+ : fAir(0), fArgonGas(0), fScintillator(0), fCsI(0), fLead(0),
+   fTungsten(0),fSteel(0),fWorldVisAtt(0),
+   fArmVisAtt(0), fHodoscopeVisAtt(0), fChamberVisAtt(0),
+   fWirePlaneVisAtt(0), fEMcalorimeterVisAtt(0), fCellVisAtt(0),
+   fHadCalorimeterVisAtt(0), fHadCalorimeterCellVisAtt(0),
+   fCollimatorGeometry(0),fSecondArmPhys(0)
 
-DetectorConstruction::~DetectorConstruction()
 {}
 
+DetectorConstruction::~DetectorConstruction()
+{
+//  delete fMessenger;
 
+  DestroyMaterials();
+
+  delete fWorldVisAtt;
+  delete fArmVisAtt;
+  delete fHodoscopeVisAtt;
+  delete fChamberVisAtt;
+  delete fWirePlaneVisAtt;
+  delete fEMcalorimeterVisAtt;
+  delete fCellVisAtt;
+  delete fHadCalorimeterVisAtt;
+  delete fHadCalorimeterCellVisAtt;
+}
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-     DefineMaterials();
-     return SetupGeometry();
+  // All managed (deleted) by SDManager
+  G4VSensitiveDetector* hodoscope1;
+  G4VSensitiveDetector* hodoscope2;
+  G4VSensitiveDetector* chamber1;
+  G4VSensitiveDetector* chamber2;
+  G4VSensitiveDetector* EMcalorimeter;
+  G4VSensitiveDetector* Hadcalorimeter;
+  ConstructMaterials();
+
+
+
+  // geometries --------------------------------------------------------------
+  // experimental hall (world volume)
+  G4VSolid* worldSolid = new G4Box("worldBox",10.*m,3.*m,10.*m);
+  G4LogicalVolume* worldLogical
+    = new G4LogicalVolume(worldSolid,fAir,"worldLogical",0,0,0);
+  G4VPhysicalVolume* worldPhysical
+    = new G4PVPlacement(0,G4ThreeVector(),worldLogical,"worldPhysical",0,0,0);
+
+  //---- Collimator wtih a hole inside--------------------------//
+  // Collimator, rectangular solid,full length z= 1 m, x=1.2 m, y=2.402 m;
+  // Standard hole or aperture, diamater =10.2cm, length =1 m, Distance =867mm;
+  // Distance between Collimator and target +z (World) : 867mm
+  // The hole's position is moved to +y : 296mm
+  // G4double apertureYMov = 296*mm;
+  const G4double apertureDia=10.2*cm;
+  const G4double collimatorW=120*cm;
+  const G4double collimatorH=240.2*cm;
+  const G4double collimatorL=100*cm;
+
+  const G4double collimatorYMov = 29.6*cm;
+  G4ThreeVector collimatorPos (0,-collimatorYMov,0);
+  G4RotationMatrix* collimatorRot =0;
+  //-------------collimator volume (shape: box)
+  fCollimatorGeometry = new TSLCollimator(apertureDia,
+                                          collimatorW,
+                                          collimatorH,
+                                          collimatorL,
+                                          fSteel,
+                                          worldPhysical,
+                                          collimatorPos,
+                                          collimatorRot);
+
+
+
+  // target Tube
+  const G4double TargetInR=0.*cm;
+  const G4double TargetOutR=2.5*cm;
+  const G4double TargetHeight=2.4*cm;
+
+  G4VSolid* targetSolid = new G4Tubs("targetTubs",
+                                     TargetInR,
+                                     TargetOutR,
+                                     TargetHeight/2,
+                                     0.,360.*deg);
+  G4LogicalVolume* targetLogical
+    = new G4LogicalVolume(targetSolid,fTungsten,"targetLogical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,-collimatorL/2-86.7*cm),
+                    targetLogical,"targetPhysical",worldLogical,0,0);
+
+
+//  // set "user limits" for drawing smooth curve
+//  G4UserLimits* userLimits = new G4UserLimits(5.0*cm);
+//  targetLogical->SetUserLimits(userLimits);
+
+  // first arm
+  G4VSolid* firstArmSolid = new G4Box("firstArmBox",1.5*m,1.*m,0.4335*m);
+  G4LogicalVolume* firstArmLogical
+    = new G4LogicalVolume(firstArmSolid,fAir,"firstArmLogical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,-0.4335*m),firstArmLogical,
+                    "firstArmPhysical",worldLogical,0,0);
+
+  // second arm
+  G4VSolid* secondArmSolid = new G4Box("secondArmBox",2.*m,2.*m,3.5*m);
+  G4LogicalVolume* secondArmLogical
+    = new G4LogicalVolume(secondArmSolid,fAir,"secondArmLogical",0,0,0);
+  fSecondArmPhys
+    = new G4PVPlacement(0,G4ThreeVector(0.,0.,collimatorL/2),secondArmLogical,
+                        "fSecondArmPhys",worldLogical,0,0);
+
+  // hodoscopes in first arm
+  G4VSolid* hodoscope1Solid = new G4Box("hodoscope1Box",5.*cm,20.*cm,0.5*cm);
+  G4LogicalVolume* hodoscope1Logical
+    = new G4LogicalVolume(hodoscope1Solid,fAir,"hodoscope1Logical",0,0,0);
+  for(int i1=0;i1<15;i1++)
+  {
+    G4double x1 = (i1-7)*10.*cm;
+    new G4PVPlacement(0,G4ThreeVector(x1,0.,-1.5*m),hodoscope1Logical,
+                      "hodoscope1Physical",firstArmLogical,0,i1);
+  }
+
+  // drift chambers in first arm
+  G4VSolid* chamber1Solid = new G4Box("chamber1Box",1.*m,30.*cm,1.*cm);
+  G4LogicalVolume* chamber1Logical
+    = new G4LogicalVolume(chamber1Solid,fAir,"chamber1Logical",0,0,0);
+  for(int j1=0;j1<5;j1++)
+  {
+    G4double z1 = (j1-2)*0.5*m;
+    new G4PVPlacement(0,G4ThreeVector(0.,0.,z1),chamber1Logical,
+                      "chamber1Physical",firstArmLogical,0,j1);
+  }
+
+  // "virtual" wire plane
+  G4VSolid* wirePlane1Solid = new G4Box("wirePlane1Box",1.*m,30.*cm,0.1*mm);
+  G4LogicalVolume* wirePlane1Logical
+    = new G4LogicalVolume(wirePlane1Solid,fAir,"wirePlane1Logical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,0.),wirePlane1Logical,
+                    "wirePlane1Physical",chamber1Logical,0,0);
+
+  // hodoscopes in second arm
+  G4VSolid* hodoscope2Solid = new G4Box("hodoscope2Box",5.*cm,20.*cm,0.5*cm);
+  G4LogicalVolume* hodoscope2Logical
+    = new G4LogicalVolume(hodoscope2Solid,fAir,"hodoscope2Logical",0,0,0);
+  for(int i2=0;i2<25;i2++)
+  {
+    G4double x2 = (i2-12)*10.*cm;
+    new G4PVPlacement(0,G4ThreeVector(x2,0.,0.),hodoscope2Logical,
+                      "hodoscope2Physical",secondArmLogical,0,i2);
+  }
+
+  // drift chambers in second arm
+  G4VSolid* chamber2Solid = new G4Box("chamber2Box",1.5*m,30.*cm,1.*cm);
+  G4LogicalVolume* chamber2Logical
+    = new G4LogicalVolume(chamber2Solid,fAir,"chamber2Logical",0,0,0);
+  for(int j2=0;j2<5;j2++)
+  {
+    G4double z2 = (j2-2)*0.5*m - 1.5*m;
+    new G4PVPlacement(0,G4ThreeVector(0.,0.,z2),chamber2Logical,
+                      "chamber2Physical",secondArmLogical,0,j2);
+  }
+
+  // "virtual" wire plane
+  G4VSolid* wirePlane2Solid = new G4Box("wirePlane2Box",1.5*m,30.*cm,0.1*mm);
+  G4LogicalVolume* wirePlane2Logical
+    = new G4LogicalVolume(wirePlane2Solid,fAir,"wirePlane2Logical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,0.),wirePlane2Logical,
+                    "wirePlane2Physical",chamber2Logical,0,0);
+
+  // CsI calorimeter
+  G4VSolid* EMcalorimeterSolid = new G4Box("EMcalorimeterBox",1.5*m,30.*cm,15.*cm);
+  G4LogicalVolume* EMcalorimeterLogical
+    = new G4LogicalVolume(EMcalorimeterSolid,fAir,"EMcalorimeterLogical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,2.*m),EMcalorimeterLogical,
+                    "EMcalorimeterPhysical",secondArmLogical,0,0);
+
+  // EMcalorimeter cells
+  G4VSolid* cellSolid = new G4Box("cellBox",7.5*cm,7.5*cm,15.*cm);
+  G4LogicalVolume* cellLogical
+    = new G4LogicalVolume(cellSolid,fAir,"cellLogical",0,0,0);
+  G4VPVParameterisation* cellParam = new CellParameterisation();
+  new G4PVParameterised("cellPhysical",cellLogical,EMcalorimeterLogical,
+                         kXAxis,80,cellParam);
+
+  // hadron calorimeter
+  G4VSolid* HadCalorimeterSolid
+    = new G4Box("HadCalorimeterBox",1.5*m,30.*cm,50.*cm);
+  G4LogicalVolume* HadCalorimeterLogical
+    = new G4LogicalVolume(HadCalorimeterSolid,fAir,"HadCalorimeterLogical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,3.*m),HadCalorimeterLogical,
+                    "HadCalorimeterPhysical",secondArmLogical,0,0);
+
+  // hadron calorimeter column
+  G4VSolid* HadCalColumnSolid
+    = new G4Box("HadCalColumnBox",15.*cm,30.*cm,50.*cm);
+  G4LogicalVolume* HadCalColumnLogical
+    = new G4LogicalVolume(HadCalColumnSolid,fAir,"HadCalColumnLogical",0,0,0);
+  new G4PVReplica("HadCalColumnPhysical",HadCalColumnLogical,
+                   HadCalorimeterLogical,kXAxis,10,30.*cm);
+
+  // hadron calorimeter cell
+  G4VSolid* HadCalCellSolid
+    = new G4Box("HadCalCellBox",15.*cm,15.*cm,50.*cm);
+  G4LogicalVolume* HadCalCellLogical
+    = new G4LogicalVolume(HadCalCellSolid,fAir,"HadCalCellLogical",0,0,0);
+  new G4PVReplica("HadCalCellPhysical",HadCalCellLogical,
+                   HadCalColumnLogical,kYAxis,2,30.*cm);
+
+  // hadron calorimeter layers
+  G4VSolid* HadCalLayerSolid
+    = new G4Box("HadCalLayerBox",15.*cm,15.*cm,2.5*cm);
+  G4LogicalVolume* HadCalLayerLogical
+    = new G4LogicalVolume(HadCalLayerSolid,fAir,"HadCalLayerLogical",0,0,0);
+  new G4PVReplica("HadCalLayerPhysical",HadCalLayerLogical,
+                  HadCalCellLogical,kZAxis,20,5.*cm);
+
+  // scintillator plates
+  G4VSolid* HadCalScintiSolid
+    = new G4Box("HadCalScintiBox",15.*cm,15.*cm,0.5*cm);
+  G4LogicalVolume* HadCalScintiLogical
+    = new G4LogicalVolume(HadCalScintiSolid,fAir,"HadCalScintiLogical",0,0,0);
+  new G4PVPlacement(0,G4ThreeVector(0.,0.,2.*cm),HadCalScintiLogical,
+                    "HadCalScintiPhysical",HadCalLayerLogical,0,0);
+
+  // sensitive detectors -----------------------------------------------------
+  G4SDManager* SDman = G4SDManager::GetSDMpointer();
+  G4String SDname;
+
+  hodoscope1 = new Hodoscope(SDname="/hodoscope1");
+  SDman->AddNewDetector(hodoscope1);
+  hodoscope1Logical->SetSensitiveDetector(hodoscope1);
+  hodoscope2 = new Hodoscope(SDname="/hodoscope2");
+  SDman->AddNewDetector(hodoscope2);
+  hodoscope2Logical->SetSensitiveDetector(hodoscope2);
+
+  chamber1 = new DriftChamber(SDname="/chamber1");
+  SDman->AddNewDetector(chamber1);
+  wirePlane1Logical->SetSensitiveDetector(chamber1);
+  chamber2 = new DriftChamber(SDname="/chamber2");
+  SDman->AddNewDetector(chamber2);
+  wirePlane2Logical->SetSensitiveDetector(chamber2);
+
+  EMcalorimeter = new EmCalorimeter(SDname="/EMcalorimeter");
+  SDman->AddNewDetector(EMcalorimeter);
+  cellLogical->SetSensitiveDetector(EMcalorimeter);
+
+  Hadcalorimeter = new HadCalorimeter(SDname="/HadCalorimeter");
+  SDman->AddNewDetector(Hadcalorimeter);
+  HadCalScintiLogical->SetSensitiveDetector(Hadcalorimeter);
+
+  // visualization attributes ------------------------------------------------
+
+  fWorldVisAtt = new G4VisAttributes(G4Colour(1.0,1.0,1.0));
+  fWorldVisAtt->SetVisibility(false);
+  worldLogical->SetVisAttributes(fWorldVisAtt);
+
+  fArmVisAtt = new G4VisAttributes(G4Colour(1.0,1.0,1.0));
+  fArmVisAtt->SetVisibility(false);
+  firstArmLogical->SetVisAttributes(fArmVisAtt);
+  secondArmLogical->SetVisAttributes(fArmVisAtt);
+
+  fHodoscopeVisAtt = new G4VisAttributes(G4Colour(0.8888,0.0,0.0));
+  hodoscope1Logical->SetVisAttributes(fHodoscopeVisAtt);
+  hodoscope2Logical->SetVisAttributes(fHodoscopeVisAtt);
+
+  fChamberVisAtt = new G4VisAttributes(G4Colour(0.0,1.0,0.0));
+  chamber1Logical->SetVisAttributes(fChamberVisAtt);
+  chamber2Logical->SetVisAttributes(fChamberVisAtt);
+
+  fWirePlaneVisAtt = new G4VisAttributes(G4Colour(0.0,0.8888,0.0));
+  fWirePlaneVisAtt->SetVisibility(false);
+  wirePlane1Logical->SetVisAttributes(fWirePlaneVisAtt);
+  wirePlane2Logical->SetVisAttributes(fWirePlaneVisAtt);
+
+  fEMcalorimeterVisAtt = new G4VisAttributes(G4Colour(0.8888,0.8888,0.0));
+  fEMcalorimeterVisAtt->SetVisibility(false);
+  EMcalorimeterLogical->SetVisAttributes(fEMcalorimeterVisAtt);
+
+  fCellVisAtt = new G4VisAttributes(G4Colour(0.9,0.9,0.0));
+  cellLogical->SetVisAttributes(fCellVisAtt);
+
+  fHadCalorimeterVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 0.9));
+  HadCalorimeterLogical->SetVisAttributes(fHadCalorimeterVisAtt);
+  fHadCalorimeterCellVisAtt = new G4VisAttributes(G4Colour(0.0, 0.0, 0.9));
+  fHadCalorimeterCellVisAtt->SetVisibility(false);
+  HadCalColumnLogical->SetVisAttributes(fHadCalorimeterCellVisAtt);
+  HadCalCellLogical->SetVisAttributes(fHadCalorimeterCellVisAtt);
+  HadCalLayerLogical->SetVisAttributes(fHadCalorimeterCellVisAtt);
+  HadCalScintiLogical->SetVisAttributes(fHadCalorimeterCellVisAtt);
+
+  // return the world physical volume ----------------------------------------
+
+  G4cout << G4endl << "The geometrical tree defined are : " << G4endl << G4endl;
+  DumpGeometricalTree(worldPhysical);
+
+  return worldPhysical;
 }
 
-
-void DetectorConstruction::DefineMaterials()
+void DetectorConstruction::ConstructMaterials()
 {
-//---------All material being used in this project ------//
-    // use G4-NIST materials data base
-  G4NistManager* MAN=G4NistManager::Instance();
+  G4double a;
+  G4double z;
+  G4double density;
+  G4double weightRatio;
+  G4String name;
+  G4String symbol;
+  G4int nElem;
 
-    Air=MAN->FindOrBuildMaterial("G4_AIR");
-    TargetMat=MAN->FindOrBuildMaterial("G4_W");
-    DefaultMat=MAN->FindOrBuildMaterial("G4_Galactic");
+  // Argon gas
+  a = 39.95*g/mole;
+  density = 1.782e-03*g/cm3;
+  fArgonGas = new G4Material(name="ArgonGas", z=18., a, density);
 
-    // collimator material Steel/iron, not in NIST
-    G4Element* C =MAN->FindOrBuildElement("C");
-    G4Element* Si=MAN->FindOrBuildElement("Si");
-    G4Element* Cr=MAN->FindOrBuildElement("Cr");
-    G4Element* Mn=MAN->FindOrBuildElement("Mn");
-    G4Element* Fe=MAN->FindOrBuildElement("Fe");
-    G4Element* Ni=MAN->FindOrBuildElement("Ni");
+  // elements for mixtures and compounds
+  a = 1.01*g/mole;
+  G4Element* elH = new G4Element(name="Hydrogen", symbol="H", z=1., a);
+  a = 12.01*g/mole;
+  G4Element* elC = new G4Element(name="Carbon", symbol="C", z=6., a);
+  a = 14.01*g/mole;
+  G4Element* elN = new G4Element(name="Nitrogen", symbol="N", z=7., a);
+  a = 16.00*g/mole;
+  G4Element* elO = new G4Element(name="Oxigen", symbol="O", z=8., a);
+  a = 126.9*g/mole;
+  G4Element* elI = new G4Element(name="Iodine", symbol="I", z=53., a);
+  a = 132.9*g/mole;
+  G4Element* elCs= new G4Element(name="Cesium", symbol="Cs", z=55., a);
 
-    G4double density;
-    G4int ncomponents;
-    G4double fractionmass;
-    /// @ CollimatorMat : StainlessSteel
-    CollimatorMat=new G4Material("StainlessSteel",density=8.06*g/cm3,ncomponents=6);
-    CollimatorMat->AddElement(C,fractionmass=0.001);
-    CollimatorMat->AddElement(Si,fractionmass=0.007);
-    CollimatorMat->AddElement(Cr,fractionmass=0.18);
-    CollimatorMat->AddElement(Mn,fractionmass=0.01);
-    CollimatorMat->AddElement(Fe,fractionmass=0.712);
-    CollimatorMat->AddElement(Ni,fractionmass=0.09);
+  // Air
+  density = 1.29*mg/cm3;
+  fAir = new G4Material(name="Air", density, nElem=2);
+  fAir->AddElement(elN, weightRatio=.7);
+  fAir->AddElement(elO, weightRatio=.3);
 
-  // Print out material so that we need to find that material G4_AIR
-  G4cout<< G4endl
-        << "******* World material : " << DefaultMat << "\n"
-        <<"******** Target material : " << TargetMat << "\n"
-        << "******* Sensitive detector material : " << DefaultMat << "\n"
-        << "******* Collimator material :" << CollimatorMat << G4endl;
-  G4cout<<*(G4Material::GetMaterialTable())<<G4endl;
+  // Scintillator
+  density = 1.032*g/cm3;
+  fScintillator = new G4Material(name="Scintillator", density, nElem=2);
+  fScintillator->AddElement(elC, 9);
+  fScintillator->AddElement(elH, 10);
+
+  // CsI
+  density = 4.51*g/cm3;
+  fCsI = new G4Material(name="CsI", density, nElem=2);
+  fCsI->AddElement(elI, weightRatio=.5);
+  fCsI->AddElement(elCs,weightRatio=.5);
+
+  // Lead
+  a = 207.19*g/mole;
+  density = 11.35*g/cm3;
+  fLead = new G4Material(name="Lead", z=82., a, density);
+
+  //  use G4-NIST materials data base
+  //
+  G4NistManager* MAN = G4NistManager::Instance();
+
+  // Tungsten
+  fTungsten = MAN->FindOrBuildMaterial("G4_W");
+  // Steel
+
+  // collimator material Steel/iron, not in NIST
+  G4Element* C =MAN->FindOrBuildElement("C");
+  G4Element* Si=MAN->FindOrBuildElement("Si");
+  G4Element* Cr=MAN->FindOrBuildElement("Cr");
+  G4Element* Mn=MAN->FindOrBuildElement("Mn");
+  G4Element* Fe=MAN->FindOrBuildElement("Fe");
+  G4Element* Ni=MAN->FindOrBuildElement("Ni");
+
+  G4double Density;
+  G4int ncomponents;
+  G4double fractionmass;
+  /// @ CollimatorMat : StainlessSteel
+  fSteel=new G4Material("StainlessSteel",Density=8.06*g/cm3,ncomponents=6);
+  fSteel->AddElement(C, fractionmass=0.001);
+  fSteel->AddElement(Si,fractionmass=0.007);
+  fSteel->AddElement(Cr,fractionmass=0.18);
+  fSteel->AddElement(Mn,fractionmass=0.01);
+  fSteel->AddElement(Fe,fractionmass=0.712);
+  fSteel->AddElement(Ni,fractionmass=0.09);
+
+
+  G4cout << G4endl << "The materials defined are : " << G4endl << G4endl;
+  G4cout << *(G4Material::GetMaterialTable()) << G4endl;
 }
 
-G4VPhysicalVolume* DetectorConstruction::SetupGeometry()
+void DetectorConstruction::DestroyMaterials()
 {
-    if(!DefaultMat||!TargetMat){
-             G4cerr<< "Cannot retrieve materials already defined. " << G4endl;
-             G4cerr<< "Exiting application " << G4endl;
-             exit(1);
-    }
+  // Destroy all allocated elements and materials
+  size_t i;
+  G4MaterialTable* matTable = (G4MaterialTable*)G4Material::GetMaterialTable();
+  for(i=0;i<matTable->size();i++)
+  { delete (*(matTable))[i]; }
+  matTable->clear();
+  G4ElementTable* elemTable = (G4ElementTable*)G4Element::GetElementTable();
+  for(i=0;i<elemTable->size();i++)
+  { delete (*(elemTable))[i]; }
+  elemTable->clear();
+}
 
-    //---------Geometry being used in this project ----------//
-    // World, box,full length= 5.048 meter
-    //------------------------------world volume (shape: box)
-      G4Box* WorldSolid = new G4Box("World_solid", //Name
-                                     fWorldLength/2, //half length
-                                     fWorldLength/2,
-                                     fWorldLength/2);
-
-      WorldLog = new G4LogicalVolume(WorldSolid, // Solid
-                                     DefaultMat, // filled material
-                                     "World");
-
-      WorldPhy = new G4PVPlacement (0, // Rotation matrix
-                                     G4ThreeVector(), // Position (0,0,0)
-                                     WorldLog, // Logical volume
-                                     "World", // Name
-                                     0, // Mother volume
-                                     false, // unused boolean
-                                     0, // copy number
-                                     fCheckOverlap); // checking overlap
-
-
-  //-------------Target cylindar--------------------------------------//
-      // Target tube, diameter 5*cm,height 24mm
-      // Target Centre position is moved in -z: (0,0,-144mm-12mm)
-      const G4double TargetInR=0.*cm;
-      const G4double TargetOutR=2.5*cm;
-      const G4double TargetHeight=2.4*cm;
-      G4ThreeVector TargetPos = G4ThreeVector(0.,0.,-TargetHeight/2);
-
-      G4Tubs* Target_tubs = new G4Tubs ("TargetSolid", //Name
-                                      TargetInR, //Inner radius
-                                      TargetOutR, //Outer radius
-                                      TargetHeight/2, // Half length in z
-                                      0.*deg, // Starting phi angle
-                                      360.*deg); // Segment angle
-
-      TargetLog = new G4LogicalVolume (Target_tubs,
-                                       DefaultMat,
-                                       "Target");
-      new G4PVPlacement (0,
-                        TargetPos,
-                        TargetLog,
-                        "Target",
-                        WorldLog,
-                        false,
-                        0,
-                        fCheckOverlap);
-
-//---- Collimator wtih a hole inside--------------------------//
-// Collimator, rectangular solid,full length z= 1 m, x=1.2 m, y=2.402 m;
-// Standard hole or aperture, diamater =10.2cm, length =1 m, Distance =867mm;
-// Collimator's position is moved in +z (World) : 867mm + TargetHeight/2 + CollimatorZ/2; in -y : 296mm
-// The hole's position is moved to +y : 296mm
-// G4double apertureYMov = 296*mm;
-
-      G4double CollimatorZMov = collimatorL/2+Distance;
-      G4ThreeVector CollimatorPos (0,-collimatorYMov,CollimatorZMov);
-      G4RotationMatrix* collimatorRot =0;
-//    collimator volume (shape: box)
-      CollimatorGeometry = new TSLCollimator(apertureDia,
-                                             collimatorW,
-                                             collimatorL,
-                                             collimatorH,
-                                             CollimatorMat,
-                                             WorldPhy,
-                                             CollimatorPos,
-                                             collimatorRot);
-// ***********************************************************************************
-// print parameters
-//
-
-      G4cout << "\n---> Target Material : "     << TargetMat->GetName()     <<'\n'
-             << "\n---> Collimator Material : " << CollimatorMat->GetName() <<'\n'
-             << "\n---> World Space : "         << DefaultMat->GetName()    <<G4endl;
-
-// ************************************************************************************
-
-//******************************
-// Sensitive Detector Geometry *
-//******************************
-// Sensitive detector (shape: box), rectangular solid,
-// width x= 204 mm, height y= 204 mm, length z= 1mm;
-// 2 Times of aperture´s diameter : DetectorLength = 2 * apertureDia;
-//
-// Sensitive detector (shape: box)
-//
-
- G4Box* detectorsolid = new G4Box("SensitiveDetectorSolid",
-                                   apertureDia,
-                                   apertureDia,
-                                   Detthick/2);
- neutronSD1Log = new G4LogicalVolume(detectorsolid,
-                                     DefaultMat,
-                                     "NeutronSD1",0,0,0);
-
- new G4PVPlacement(0,
-     G4ThreeVector(0,-collimatorYMov,Distance-Detthick/2),
-                   neutronSD1Log,
-                   "NeutronSD1",
-                    WorldLog,
-                    false,
-                    0,
-                    fCheckOverlap);
- // NeutronDetector1 cells
- //
- G4VSolid* neutroncellSolid = new G4Box("neutroncellBox",apertureDia/10,apertureDia/10,Detthick/2);
- G4LogicalVolume* neutroncellLog
-   = new G4LogicalVolume(neutroncellSolid,DefaultMat,"neutroncellLog",0,0,0);
- G4VPVParameterisation* cellParam = new CellParameterisation();
- new G4PVParameterised("neutroncellPhy",neutroncellLog,neutronSD1Log,
-                        kXAxis,100,cellParam);
-
-
-
-
-    // Visualisation attributes, Invisible world volume
-    //
-    WorldLog->SetVisAttributes(G4VisAttributes::Invisible);
-
-    // Target volume with Blue (0.0,0.0,1.0)
-    //
-    G4VisAttributes* targetAttributes = new G4VisAttributes(G4Color(0.0,0.0,1.0));
-    targetAttributes->SetVisibility(true);
-    TargetLog->SetVisAttributes(targetAttributes);
-
-    // Collimator volume with  Gray
-    //
-    G4VisAttributes* collimatorAttributes = new G4VisAttributes(G4Color(0.5,0.5,0.5));
-    collimatorAttributes->SetForceSolid(true);
-    if(CollimatorGeometry)
-    {
-        CollimatorGeometry->GetPhysicalVolume()->GetLogicalVolume()->SetVisAttributes(collimatorAttributes);
-    }
-
-    // detectors volumes with White (1.0,1.0,1.0)
-    //
-    G4VisAttributes* detectorAttributes = new G4VisAttributes(G4Color(1.0,1.0,1.0));
-    detectorAttributes->SetVisibility(true);
-//    collimatorSDLog->SetVisAttributes(detectorAttributes);
-    neutronSD1Log->SetVisAttributes(detectorAttributes);
-
-// ***********************************
-// .......Sensitive detectors .......
-// ***********************************
-    G4VSensitiveDetector* neutrondet;
-
-    G4SDManager* SDman = G4SDManager::GetSDMpointer();
-    G4String SDname;
-
-    neutrondet = new NeutronSD (SDname="NeutronSensitiveDetector");
-    // Get pointer to detector manager
-    SDman->AddNewDetector(neutrondet);
-    // Attach detector to volume defining neutronSDLog
-    neutronSD1Log->SetSensitiveDetector(neutrondet);
-
-    return WorldPhy;
+void DetectorConstruction::DumpGeometricalTree(G4VPhysicalVolume* aVolume,G4int depth)
+{
+  for(int isp=0;isp<depth;isp++)
+  { G4cout << " "; }
+  G4cout << aVolume->GetName() << "[" << aVolume->GetCopyNo() << "] "
+         << aVolume->GetLogicalVolume()->GetName() << " "
+         << aVolume->GetLogicalVolume()->GetNoDaughters() << " "
+         << aVolume->GetLogicalVolume()->GetMaterial()->GetName();
+  if(aVolume->GetLogicalVolume()->GetSensitiveDetector())
+  {
+    G4cout << " " << aVolume->GetLogicalVolume()->GetSensitiveDetector()
+                            ->GetFullPathName();
+  }
+  G4cout << G4endl;
+  for(int i=0;i<aVolume->GetLogicalVolume()->GetNoDaughters();i++)
+  { DumpGeometricalTree(aVolume->GetLogicalVolume()->GetDaughter(i),depth+1); }
 }
 

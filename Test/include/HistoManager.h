@@ -2,46 +2,59 @@
 
 @brief Give a brief description of this file, here.
 */
+
 #ifndef HISTOMANAGER_H
 #define HISTOMANAGER_H
 
 #include "globals.hh"
+#include <vector>
+#include "G4ThreeVector.hh"
 
+// Root classes
 class TFile;
 class TTree;
 class TH1D;
+class TH2D;
 
-const G4int MaxHisto = 5;
-
-/** Document this class here
-*/
 class HistoManager
 {
-  public:
-    HistoManager();
-   ~HistoManager();
+private:
+     HistoManager();  //protected
 
-    void book();
-    void save();
+public:
 
-    void FillHisto(G4int id, G4double bin, G4double weight = 1.0);
-    void Normalize(G4int id, G4double fac);
+  virtual ~HistoManager();
+  static HistoManager* getInstance();
 
-    void FillNtuple(G4double energyAbs, G4double energyGap,
-                    G4double trackLAbs, G4double trackLGap);
+  void Update();
+  void Clear();
+//  void save(const G4String& fname);
+  void Save();
 
-    void PrintStatistic();
 
-  private:
-    TFile* rootFile;            //TFile object is used to access ROOT files
-    TH1D*  histo[MaxHisto];     //Creating histograms, an array of object pointers
-    TTree* ntupl;               //In case, store large quantities of same-class object
-    // TTree and TNtuple (TNtuple is a TTree that is limited to only hold floating number)
-    // TTree holds all kind of data
+  void FillIncident(const G4ThreeVector& p);
+  void FillDose(const G4ThreeVector& p, G4double dedx);
 
-    G4double Eabs;
-    G4double Egap;
-    G4double Labs;
-    G4double Lgap;
+  void ClearIncidentFlag();
+
+private:
+
+  static HistoManager* fInstance;
+
+  TH2D* incident_map;
+  TH1D* incident_x_hist;
+
+  TH2D* dose_map;
+  TH1D* dose_hist;
+
+  G4bool incidentFlag;
+
 };
+
+inline void HistoManager::ClearIncidentFlag()
+{
+    incidentFlag = false;
+}
+
 #endif // HISTOMANAGER_H
+

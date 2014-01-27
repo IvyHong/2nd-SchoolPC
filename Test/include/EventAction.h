@@ -7,30 +7,35 @@
 class RunAction;
 class HistoManager;
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
 class EventAction : public G4UserEventAction
 {
+  public:
+    EventAction();
+    virtual ~EventAction();
+
+    virtual void BeginOfEventAction(const G4Event*);
+    virtual void EndOfEventAction(const G4Event*);
+
+  public:
 public:
-  EventAction(RunAction*, HistoManager*);
-  virtual ~EventAction();
+  inline void SetVerbose(G4int val) { fVerboseLevel = val; }
+  inline G4int GetVerbose() const { return fVerboseLevel; }
 
-  void BeginOfEventAction(const G4Event*);
-  void EndOfEventAction(const G4Event*);
+  private:
+    RunAction* fRunAct;
+    HistoManager* fHistoMan;
 
-  void AddAbs(G4double de, G4double dl) {fEnergyAbs += de; fTrackLAbs += dl;};
-  void AddGap(G4double de, G4double dl) {fEnergyGap += de; fTrackLGap += dl;};
+    G4int fVerboseLevel;
+    G4int fPrintModulo;
 
-private:
-   RunAction* fRunAct;
-   HistoManager* fHistoManager;
+    G4int fHHC1ID;
+    G4int fHHC2ID;
+    G4int fDHC1ID;
+    G4int fDHC2ID;
+    G4int fECHCID;
+    G4int fHCHCID;
 
-   G4double fEnergyAbs, fEnergyGap;
-   G4double fTrackLAbs, fTrackLGap;
-
-   G4int fPrintModulo;
 };
-
 
 
 #endif // EVENTACTION_H

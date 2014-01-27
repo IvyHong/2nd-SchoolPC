@@ -31,15 +31,20 @@ SOURCES = \
     src/HistoManager.cpp \
     src/TSLCollimator.cpp \
     src/RunAction.cpp \
-    src/NeutronSD.cpp \
-    src/GammaSD.cpp \
-    src/NeutronHit.cpp \
-    src/GammaHit.cpp \
     src/EventAction.cpp \
     src/PrimaryGeneratorAction.cpp \
     src/PhysicsList.cpp \
     src/DetectorConstruction.cpp \
-    src/CellParameterisation.cpp
+    src/CellParameterisation.cpp \
+    src/HodoscopeHit.cpp \
+    src/Hodoscope.cpp \
+    src/DriftChamberHit.cpp \
+    src/DriftChamber.cpp \
+    src/EmCalorimeter.cpp \
+    src/EmCalorimeterHit.cpp \
+    src/HadCalorimeter.cpp \
+    src/HadCalorimeterHit.cpp \
+
 
 # HEADERS is used to tell the IDE which header files
 # to include in the project. This will show these header
@@ -57,15 +62,19 @@ HEADERS = \
     include/HistoManager.h \
     include/TSLCollimator.h \
     include/RunAction.h \
-    include/NeutronSD.h \
-    include/GammaSD.h \
-    include/NeutronHit.h \
-    include/GammaHit.h \
     include/EventAction.h \
     include/PrimaryGeneratorAction.h \
     include/PhysicsList.h \
     include/DetectorConstruction.h \
-    include/CellParameterisation.h
+    include/CellParameterisation.h \
+    include/DriftChamberHit.h \
+    include/DriftChamber.h \
+    include/HodoscopeHit.h \
+    include/Hodoscope.h \
+    include/EmCalorimeterHit.h \
+    include/EmCalorimeter.h \
+    include/HadCalorimeter.h \
+    include/HadCalorimeterHit.h
 
 # INCLUDEPATH is used to tell the compiler where to look
 # (which directories) for header files. These directories
@@ -98,7 +107,9 @@ LIBS += -L$$(G4LIB) -lG4global -lG4physicslists \
     -lG4VRML -lG4GMocren -lG4processes -lG4zlib
 
 # ROOT library path and files
-LIBS += -L$$(ROOTSYS)/lib  -lTree -lHist
+LIBS += -L$$(ROOTSYS)/lib  -lTree -lHist -lGui -lCore -lCint -lRIO  \
+    -lNet -lGraf -lGraf3d -lGpad -lRint -lPostscript    \
+    -lMatrix -lPhysics -lMathCore -lThread -lm -rdynamic -pthread
 
 # QT specifies which of the Qt library modules are used by the project
 

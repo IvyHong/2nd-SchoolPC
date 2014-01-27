@@ -37,8 +37,8 @@ TSLCollimator::TSLCollimator()
 // Constructor with parameters
 TSLCollimator::TSLCollimator(G4double ApertureDiameter,
                              G4double CollimatorWidth,
-                             G4double CollimatorLength,
                              G4double CollimatorHeight,
+                             G4double CollimatorLength,
                              G4Material * CollimatorMat,
                              G4VPhysicalVolume * MotherPV,
                              G4ThreeVector CollimatorPos,
@@ -46,8 +46,8 @@ TSLCollimator::TSLCollimator(G4double ApertureDiameter,
 {
     fApertureDiameter = ApertureDiameter;
     fCollimatorWidth = CollimatorWidth;
-    fCollimatorLength = CollimatorLength;
     fCollimatorHeight = CollimatorHeight;
+    fCollimatorLength = CollimatorLength;
     fCollimatorMat = CollimatorMat;
     fCollimatorPos = CollimatorPos;
     fCollimatorRot = Rotation;
@@ -78,7 +78,7 @@ void TSLCollimator::TSLCollimatorSetup(G4VPhysicalVolume *MotherPV)
                            fCollimatorHeight/2,
                            fCollimatorLength/2);
 
-      G4SubtractionSolid* CollimatorSolid= new G4SubtractionSolid("CollimatorSol",
+      G4SubtractionSolid* CollimatorSolid= new G4SubtractionSolid("CollimatorBox-CylinderTube",
                                                                   CollimatorBox,
                                                                   CylinderTube,
                                                                   0,
