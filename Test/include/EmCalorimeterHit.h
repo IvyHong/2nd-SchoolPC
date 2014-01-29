@@ -8,6 +8,7 @@
 #include "G4LogicalVolume.hh"
 #include "G4Transform3D.hh"
 #include "G4RotationMatrix.hh"
+#include "G4ParticleDefinition.hh"
 
 class G4AttDef;
 class G4AttValue;
@@ -32,21 +33,36 @@ class EmCalorimeterHit : public G4VHit
 
   private:
       G4int fCellID;
+      G4double fKinE;
       G4double fEdep;
+      G4ParticleDefinition* fPD;
       G4ThreeVector fPos;
       G4RotationMatrix fRot;
       const G4LogicalVolume* fPLogV;
 
   public:
-      inline void SetCellID(G4int z) { fCellID = z; }
-      inline G4int GetCellID() const { return fCellID; }
-      inline void SetEdep(G4double de) { fEdep = de; }
+      // Kinetic Energy
+      //
+      inline void SetKineticEnergy(G4double de) { fKinE = de; }
+      inline G4double GetKineticEnergy() const  { return fKinE;}
+      // Deposited Energy
+      //
       inline void AddEdep(G4double de) { fEdep += de; }
-      inline G4double GetEdep() const { return fEdep; }
+      inline G4double GetEdep() const  { return fEdep; }
+      // Particle name
+      //
+      inline void SetParticleDef (G4ParticleDefinition* pd) {fPD = pd;}
+      inline G4ParticleDefinition* GetParticleDef() const {return fPD;}
+      // Position Vector
+      //
       inline void SetPos(G4ThreeVector xyz) { fPos = xyz; }
-      inline G4ThreeVector GetPos() const { return fPos; }
+      inline G4ThreeVector GetPos() const   { return fPos; }
+      // Rotation matrix
+      //
       inline void SetRot(G4RotationMatrix rmat) { fRot = rmat; }
       inline G4RotationMatrix GetRot() const { return fRot; }
+      // Logical volume
+      //
       inline void SetLogV(G4LogicalVolume* val) { fPLogV = val; }
       inline const G4LogicalVolume* GetLogV() const { return fPLogV; }
 };

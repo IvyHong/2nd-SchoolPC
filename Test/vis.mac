@@ -41,3 +41,5 @@
 /vis/verbose warnings
 
 /run/beamOn 10
+
+/vis/scene/endOfEventAction accumulate

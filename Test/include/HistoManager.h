@@ -16,45 +16,41 @@ class TTree;
 class TH1D;
 class TH2D;
 
+const G4int MaxHisto = 5;
+
 class HistoManager
 {
 private:
-     HistoManager();  //protected
+    static HistoManager* myAnalysis;
+    HistoManager();  //protected
 
 public:
 
   virtual ~HistoManager();
-  static HistoManager* getInstance();
+  static HistoManager* GetAnalysis();
 
-  void Update();
-  void Clear();
-//  void save(const G4String& fname);
+  void Book();
   void Save();
 
+  void FillHisto(G4int id, G4double bin, G4double weight = 1.0);
+  void Normalize(G4int id, G4double fac);
 
-  void FillIncident(const G4ThreeVector& p);
-  void FillDose(const G4ThreeVector& p, G4double dedx);
+  void FillNtuple(G4double KinE, G4double EDep);
 
-  void ClearIncidentFlag();
+  void PrintStatistic();
 
 private:
 
-  static HistoManager* fInstance;
+  TFile* rootFile;
+  TH1D*  histo[MaxHisto];
+  TTree* ntupl;
 
-  TH2D* incident_map;
-  TH1D* incident_x_hist;
-
-  TH2D* dose_map;
-  TH1D* dose_hist;
-
-  G4bool incidentFlag;
+  G4double fKinE;
+  G4double fEDep;
 
 };
 
-inline void HistoManager::ClearIncidentFlag()
-{
-    incidentFlag = false;
-}
+
 
 #endif // HISTOMANAGER_H
 

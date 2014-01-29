@@ -6,12 +6,15 @@
 
 CellParameterisation::CellParameterisation()
 {
-    for(int copyNo=0;copyNo<80;copyNo++)
+    // Initialise
+    G4int copyNo(0);
+
+    for(copyNo=0;copyNo<100;copyNo++)
     {
-      G4int column = copyNo / 4;
-      G4int row = copyNo % 4;
-      fXCell[copyNo] = (column-9)*15.*cm - 7.5*cm;
-      fYCell[copyNo] = (row-1)*15*cm - 7.5*cm;
+      G4int column = copyNo / 10;
+      G4int row = copyNo % 10;
+      fXCell.push_back( (column-4)*10.*cm - 5*cm);
+      fYCell.push_back( (row-4)*10.*cm - 5*cm);
     }
 }
 

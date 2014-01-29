@@ -70,7 +70,7 @@ void TSLCollimator::TSLCollimatorSetup(G4VPhysicalVolume *MotherPV)
       G4Tubs* CylinderTube = new G4Tubs
                            ("CylinderTube",
                            0.*mm,fApertureDiameter/2,
-                           fCollimatorLength/2,
+                           fCollimatorLength/2+0.1*mm,
                            0,2*M_PI);
       G4Box* CollimatorBox = new G4Box
                            ("CollimatorBox",

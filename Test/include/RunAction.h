@@ -21,7 +21,7 @@ public:
        void    EndOfRunAction(const G4Run*);
 
 private:
-       HistoManager* fanalysis;
+
        G4Timer*      myTimer;
 
 };

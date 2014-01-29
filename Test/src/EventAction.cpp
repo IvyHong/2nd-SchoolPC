@@ -12,166 +12,74 @@
 #include "G4ios.hh"
 #include "G4SystemOfUnits.hh"
 
-#include "HodoscopeHit.h"
-#include "DriftChamberHit.h"
+#include "MonitorHit.h"
 #include "EmCalorimeterHit.h"
 
-#include "HadCalorimeterHit.h"
 
 EventAction::EventAction()
-    :fPrintModulo(100)
-{
-    fHHC1ID=-1;
-    fHHC2ID=-1;
-    fDHC1ID=-1;
-    fDHC2ID=-1;
-    fECHCID=-1;
-    fHCHCID=-1;
-    fVerboseLevel = 1;
-}
+{}
 
 EventAction::~EventAction()
 {}
 
-void EventAction::BeginOfEventAction(const G4Event* evt)
+void EventAction::BeginOfEventAction(const G4Event* )
 {
-    G4int evtNb = evt->GetEventID();
-
-    G4String colName;
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
-    if(fHHC1ID==-1&&fHHC2ID==-1&&fDHC1ID==-1&&fDHC2ID==-1&&fECHCID==-1&&fHCHCID==-1)
-    {
-    fHHC1ID = SDman->GetCollectionID(colName="hodoscope1/hodoscopeColl");
-    fHHC2ID = SDman->GetCollectionID(colName="hodoscope2/hodoscopeColl");
-    fDHC1ID = SDman->GetCollectionID(colName="chamber1/driftChamberColl");
-    fDHC2ID = SDman->GetCollectionID(colName="chamber2/driftChamberColl");
-    fECHCID = SDman->GetCollectionID(colName="EMcalorimeter/EMcalorimeterColl");
-    fHCHCID = SDman->GetCollectionID(colName="HadCalorimeter/HadCalorimeterColl");
-    }
 
-    if (evtNb%fPrintModulo == 0)
-      G4cout << "\n---> Begin of event: " << evtNb << G4endl;
+    // Getting code for HitsCollection of EMCalorimeter
+    //
+    fHitsCollectionID = SDman->GetCollectionID("EMcalorimeterCollection");
+    // Getting code for HitsCollection of Silicon Monitor
+    //
+    fHitsCollectionID_monitor = SDman->GetCollectionID("MonitorCollection");
 }
 
 void EventAction::EndOfEventAction(const G4Event* evt)
 {
-  G4HCofThisEvent * HCE = evt->GetHCofThisEvent();
-  HodoscopeHitsCollection* fHHC1 = 0;
-  HodoscopeHitsCollection* fHHC2 = 0;
-  DriftChamberHitsCollection* fDHC1 = 0;
-  DriftChamberHitsCollection* fDHC2 = 0;
-  EmCalorimeterHitsCollection* ECHC = 0;
-  HadCalorimeterHitsCollection* HCHC = 0;
-  if(HCE)
-  {
-    fHHC1 = (HodoscopeHitsCollection*)(HCE->GetHC(fHHC1ID));
-    fHHC2 = (HodoscopeHitsCollection*)(HCE->GetHC(fHHC2ID));
-    fDHC1 = (DriftChamberHitsCollection*)(HCE->GetHC(fDHC1ID));
-    fDHC2 = (DriftChamberHitsCollection*)(HCE->GetHC(fDHC2ID));
-    ECHC = (EmCalorimeterHitsCollection*)(HCE->GetHC(fECHCID));
-    HCHC = (HadCalorimeterHitsCollection*)(HCE->GetHC(fHCHCID));
-  }
+    HistoManager* myAnalysis = HistoManager::GetAnalysis();
 
-  // DO SOME ANALYSIS
-  HistoManager* analysis = HistoManager::getInstance();
+    // HCE : HitsCollectionOfThisEvent
+    G4HCofThisEvent * HCE = evt->GetHCofThisEvent();
 
-
-
-  // Diagnostics
-
-  if (fVerboseLevel==0 || evt->GetEventID() % fVerboseLevel != 0) return;
-
-  G4PrimaryParticle* primary = evt->GetPrimaryVertex(0)->GetPrimary(0);
-  G4cout << G4endl
-         << ">>> Event " << evt->GetEventID() << " >>> Simulation truth : "
-         << primary->GetG4code()->GetParticleName()
-         << " " << primary->GetMomentum() << G4endl;
-
-  if(fHHC1)
-  {
-    int n_hit = fHHC1->entries();
-    G4cout << "Hodoscope 1 has " << n_hit << " hits." << G4endl;
-    for(int i1=0;i1<n_hit;i1++)
+    if(fHitsCollectionID >=0)
     {
-      HodoscopeHit* aHit = (*fHHC1)[i1];
-      aHit->Print();
-      analysis->FillIncident(aHit->GetPos());
-    }
-  }
-  if(fHHC2)
-  {
-    int n_hit = fHHC2->entries();
-    G4cout << "Hodoscope 2 has " << n_hit << " hits." << G4endl;
-    for(int i1=0;i1<n_hit;i1++)
-    {
-      HodoscopeHit* aHit = (*fHHC2)[i1];
-      aHit->Print();
-    }
-  }
-  if(fDHC1)
-  {
-    int n_hit = fDHC1->entries();
-    G4cout << "Drift Chamber 1 has " << n_hit << " hits." << G4endl;
-    for(int i2=0;i2<5;i2++)
-    {
-      for(int i1=0;i1<n_hit;i1++)
-      {
-        DriftChamberHit* aHit = (*fDHC1)[i1];
-        if(aHit->GetLayerID()==i2) aHit->Print();
+        EmCalorimeterHitsCollection* hitsCollection =
+          dynamic_cast<EmCalorimeterHitsCollection*>(HCE->GetHC(fHitsCollectionID));
+
+        G4double totalEnergy = 0.;
+
+        if ( 0 != hitsCollection ) {
+           G4int i(0);
+
+           for ( i=0 ; i<100 ; i++ ) {
+              EmCalorimeterHit* aHit = (*hitsCollection)[i];
+
+              myAnalysis->FillHisto(1,aHit->GetKineticEnergy());
+              myAnalysis->FillHisto(2,aHit->GetEdep());
+              totalEnergy += aHit->GetEdep();
+
+              aHit->Print();
+           }
+        }
+        G4cout<<"Energy deposited in calorimeter "<<totalEnergy/MeV<<" MeV"<<G4endl;
+     }
+
+
+     ////////////////////////////////////////////////////////////////////////
+     // HandsOn4: Output code of Silicon Monitor Hits
+     if ( fHitsCollectionID_monitor >= 0 )
+     {
+        MonitorHitsCollection* hitsCollection_monitor =
+           dynamic_cast<MonitorHitsCollection*>(HCE->GetHC(fHitsCollectionID_monitor));
+
+         G4int numberOfHits = hitsCollection_monitor->GetSize();
+         for ( int i = 0 ; i < numberOfHits ; i++ )
+         {
+            MonitorHit* aHit = (*hitsCollection_monitor)[i];
+            G4cout << "Information of " << i+1 << " Monitor Hit of this event." << G4endl;
+            aHit->Print();
+         }
       }
-    }
-  }
-  if(fDHC2)
-  {
-    int n_hit = fDHC2->entries();
-    G4cout << "Drift Chamber 2 has " << n_hit << " hits." << G4endl;
-    for(int i2=0;i2<5;i2++)
-    {
-      for(int i1=0;i1<n_hit;i1++)
-      {
-        DriftChamberHit* aHit = (*fDHC2)[i1];
-        if(aHit->GetLayerID()==i2) aHit->Print();
-      }
-    }
-  }
-  if(ECHC)
-  {
-    int iHit = 0;
-    double totalE = 0.;
-    for(int i1=0;i1<80;i1++)
-    {
-      EmCalorimeterHit* aHit = (*ECHC)[i1];
-      double eDep = aHit->GetEdep();
-      if(eDep>0.)
-      {
-        iHit++;
-        totalE += eDep;
-      }
-    }
-    G4cout << "EM Calorimeter has " << iHit << " hits. Total Edep is "
-           << totalE/MeV << " (MeV)" << G4endl;
-  }
-  if(HCHC)
-  {
-    int iHit = 0;
-    double totalE = 0.;
-    for(int i1=0;i1<20;i1++)
-    {
-      HadCalorimeterHit* aHit = (*HCHC)[i1];
-      double eDep = aHit->GetEdep();
-      if(eDep>0.)
-      {
-        iHit++;
-        totalE += eDep;
-      }
-    }
-    G4cout << "Hadron Calorimeter has " << iHit << " hits. Total Edep is "
-           << totalE/MeV << " (MeV)" << G4endl;
-  }
-
-
-
-
 
 }
 

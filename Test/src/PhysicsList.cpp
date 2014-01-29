@@ -20,8 +20,8 @@
 #include "HadronPhysics.h"
 #include "IonPhysics.h"
 
-//#include "HadronPhysicsQGSP_BERT.hh"
-//#include "HadronPhysicsQGSP_BIC.hh"
+#include "HadronPhysicsQGSP_BERT.hh"
+#include "HadronPhysicsQGSP_BIC.hh"
 
 PhysicsList::PhysicsList(): G4VModularPhysicsList()
 {
@@ -53,9 +53,9 @@ PhysicsList::PhysicsList(): G4VModularPhysicsList()
 
    // Hadron Physics ( Apply related processes to hadrons )
   RegisterPhysics( new HadronPhysics("hadron"));
-// We do not use hadronic lists since v7.
+   // We do not use hadronic lists since v7.
   //RegisterPhysics( new HadronPhysicsQGSP_BERT("hadron"));
-  //RegisterPhysics( new HadronPhysicsQGSP_BIC("hadron"));
+  RegisterPhysics( new HadronPhysicsQGSP_BIC("hadron"));
 
   // Ion Physics ( Apply related processes to ions )
   RegisterPhysics( new IonPhysics("ion"));

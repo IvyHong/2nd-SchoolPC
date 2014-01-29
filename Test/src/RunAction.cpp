@@ -1,6 +1,7 @@
 #include "RunAction.h"
 #include "G4Timer.hh"
 #include "HistoManager.h"
+#include <stdio.h>
 
 #include "G4Run.hh"
 #include "G4RunManager.hh"
@@ -27,9 +28,8 @@ RunAction::~RunAction()
 
 void RunAction::BeginOfRunAction(const G4Run* aRun)
 {
-
-    HistoManager* analysis = HistoManager::getInstance();
-    analysis->Update();
+    HistoManager* fanalysis = HistoManager::GetAnalysis();
+    fanalysis->Book();
 
 
     G4cout <<"### Run "<< aRun->GetRunID() <<" start.." << G4endl;
@@ -55,11 +55,13 @@ void RunAction::EndOfRunAction(const G4Run* aRun)
            << " " << *myTimer << G4endl;
     // Write histograms to file
     G4cout << "Close and Save Histograms" << G4endl;
-    G4cout << "### Run " << aRun->GetRunID() << " ended." << G4endl;
+    G4cout << "### Run " << aRun->GetRunID() << " ended." <<
+              "*****************************************" << G4endl;
 
+    HistoManager* fanalysis = HistoManager::GetAnalysis();
 
-    HistoManager* analysis = HistoManager::getInstance();
-    analysis->Save();
+    fanalysis->PrintStatistic();
+    fanalysis->Save();
 
 
 }

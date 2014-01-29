@@ -11,22 +11,28 @@ EmCalorimeter::EmCalorimeter(G4String name)
 :G4VSensitiveDetector(name)
 {
   G4String HCname;
-  collectionName.insert(HCname="EMcalorimeterColl");
-  fHCID = -1;
+  collectionName.insert(HCname="EMcalorimeterCollection");
+  fHitsCollectionID = -1;
 }
 
 EmCalorimeter::~EmCalorimeter(){;}
 
 void EmCalorimeter::Initialize(G4HCofThisEvent*HCE)
 {
+  // Creating hit collection
+  // Create a new collection
   fHitsCollection = new EmCalorimeterHitsCollection
                    (SensitiveDetectorName,collectionName[0]);
-  if(fHCID<0)
-  { fHCID = G4SDManager::GetSDMpointer()->GetCollectionID(fHitsCollection); }
-  HCE->AddHitsCollection(fHCID,fHitsCollection);
+
+  if(fHitsCollectionID<0)
+  {
+      fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID(fHitsCollection);
+  }
+
+  HCE->AddHitsCollection(fHitsCollectionID,fHitsCollection);
 
   // fill calorimeter hits with zero energy deposition
-  for(int i=0;i<80;i++)
+  for(G4int i=0;i<100;i++)
   {
     EmCalorimeterHit* aHit = new EmCalorimeterHit(i);
     fHitsCollection->insert( aHit );
@@ -35,27 +41,43 @@ void EmCalorimeter::Initialize(G4HCofThisEvent*HCE)
 
 G4bool EmCalorimeter::ProcessHits(G4Step*aStep,G4TouchableHistory* /*ROhist*/)
 {
+  // Accumulating hit data
+  // Get energy deposited in this step
   G4double edep = aStep->GetTotalEnergyDeposit();
-  if(edep==0.) return true;
+  if(0.==edep) return true;
 
+  // Get volume and copy number
+  //
   G4StepPoint* preStepPoint = aStep->GetPreStepPoint();
   G4TouchableHistory* theTouchable
     = (G4TouchableHistory*)(preStepPoint->GetTouchable());
+
   G4VPhysicalVolume* thePhysical = theTouchable->GetVolume();
   G4int copyNo = thePhysical->GetCopyNo();
 
+  // Get corresponding hit
+  //
   EmCalorimeterHit* aHit = (*fHitsCollection)[copyNo];
-  // check if it is first touch
+
+  // check to see if this is first time the hit has updated
   if(!(aHit->GetLogV()))
   {
     // fill volume information
     aHit->SetLogV(thePhysical->GetLogicalVolume());
+
     G4AffineTransform aTrans = theTouchable->GetHistory()->GetTopTransform();
     aTrans.Invert();
+
     aHit->SetRot(aTrans.NetRotation());
     aHit->SetPos(aTrans.NetTranslation());
+
   }
-  // add energy deposition
+
+  // Kinetic energy
+  //
+  aHit->SetKineticEnergy(preStepPoint->GetKineticEnergy());
+
+  // Accumulate energy deposition
   aHit->AddEdep(edep);
 
   return true;

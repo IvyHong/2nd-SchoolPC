@@ -36,14 +36,11 @@ SOURCES = \
     src/PhysicsList.cpp \
     src/DetectorConstruction.cpp \
     src/CellParameterisation.cpp \
-    src/HodoscopeHit.cpp \
-    src/Hodoscope.cpp \
-    src/DriftChamberHit.cpp \
-    src/DriftChamber.cpp \
     src/EmCalorimeter.cpp \
     src/EmCalorimeterHit.cpp \
-    src/HadCalorimeter.cpp \
-    src/HadCalorimeterHit.cpp \
+    src/Monitor.cpp \
+    src/MonitorHit.cpp
+
 
 
 # HEADERS is used to tell the IDE which header files
@@ -67,14 +64,10 @@ HEADERS = \
     include/PhysicsList.h \
     include/DetectorConstruction.h \
     include/CellParameterisation.h \
-    include/DriftChamberHit.h \
-    include/DriftChamber.h \
-    include/HodoscopeHit.h \
-    include/Hodoscope.h \
     include/EmCalorimeterHit.h \
     include/EmCalorimeter.h \
-    include/HadCalorimeter.h \
-    include/HadCalorimeterHit.h
+    include/MonitorHit.h \
+    include/Monitor.h
 
 # INCLUDEPATH is used to tell the compiler where to look
 # (which directories) for header files. These directories

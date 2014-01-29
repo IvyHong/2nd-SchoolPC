@@ -10,30 +10,20 @@ class HistoManager;
 class EventAction : public G4UserEventAction
 {
   public:
+    // Constructor
     EventAction();
+
+    // Destructor
     virtual ~EventAction();
 
+    // Methods
     virtual void BeginOfEventAction(const G4Event*);
     virtual void EndOfEventAction(const G4Event*);
 
-  public:
-public:
-  inline void SetVerbose(G4int val) { fVerboseLevel = val; }
-  inline G4int GetVerbose() const { return fVerboseLevel; }
-
   private:
-    RunAction* fRunAct;
-    HistoManager* fHistoMan;
 
-    G4int fVerboseLevel;
-    G4int fPrintModulo;
-
-    G4int fHHC1ID;
-    G4int fHHC2ID;
-    G4int fDHC1ID;
-    G4int fDHC2ID;
-    G4int fECHCID;
-    G4int fHCHCID;
+    G4int fHitsCollectionID;
+    G4int fHitsCollectionID_monitor;
 
 };
 

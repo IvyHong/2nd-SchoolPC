@@ -15,16 +15,12 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 
+G4ParticleGun* PrimaryGeneratorAction::fParticleGun(0);
+
 PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* detector)
     :G4VUserPrimaryGeneratorAction(),
-      fParticleGun(0),fDetector(detector)
+     fDetector(detector)
 {
-  fMomentum = 180.*MeV;
-  fSigmaMomentum = fMomentum/20;
-  /// fSigmaAngle = std::atan(apertureDiameter*0.5/867*mm);
-  fSigmaAngle = 3.36*deg;
-  fRandomizePrimary = true;
-
 
 //  //*************************************************************************
 //  G4double apertureDiameter =0;
@@ -52,7 +48,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* detector)
 //           << "Method2 Position " << ParticleGunZPos2 << " mm" << G4endl;}
   //*************************************************************************
 
-  fParticleGunZPos=-1000.*mm;
+  fParticleGunZPos=-10.*mm;
 
   ///@@
   //
@@ -64,7 +60,9 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(DetectorConstruction* detector)
   fProton = particleTable->FindParticle(particleName="proton");
   fNeutron= particleTable->FindParticle(particleName="neutron");
 
-  fParticleGun->SetParticleDefinition(fProton);
+  fParticleGun->SetParticleDefinition(fNeutron);
+  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0.,0.,1.));
+  fParticleGun->SetParticleEnergy(180.*MeV);
   fParticleGun->SetParticlePosition(G4ThreeVector(0.*mm,0.*mm,fParticleGunZPos));
 }
 
@@ -75,28 +73,7 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-    G4ParticleDefinition* particle;
-
-    if(fRandomizePrimary)
-    {
-        particle = fProton;
-        fParticleGun->SetParticleDefinition(particle );
-    }
-
-    // G4UniformRand() function is given random number between(0,1)
-    // G4int i = (int)(5.*G4UniformRand());
-
-
-    G4double pp = fMomentum + (G4UniformRand()-0.5)*fSigmaMomentum;
-    G4double mass = particle->GetPDGMass();
-    G4double Ekin = std::sqrt(pp*pp+mass*mass)-mass;
-    fParticleGun->SetParticleEnergy(Ekin);
-
-    G4double angle = (G4UniformRand()-0.5)*fSigmaAngle;
-    fParticleGun->SetParticleMomentumDirection(G4ThreeVector(std::sin(angle),0.,std::cos(angle)));
-
     fParticleGun->GeneratePrimaryVertex(anEvent);
-
 }
 
 

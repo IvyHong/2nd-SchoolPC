@@ -10,126 +10,136 @@
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
 
-HistoManager* HistoManager::fInstance = 0;
+HistoManager* HistoManager::myAnalysis = 0;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 HistoManager::HistoManager()
+    :rootFile(0),ntupl(0), fKinE(0), fEDep(0)
 {
-    // ROOT style
-    gROOT->Reset();
+    // histograms
+    for (G4int k=0; k<MaxHisto; k++) histo[k] = 0;
 
-    // define histograms
-    incident_map = new TH2D("Incident map","Incident Distribution",
-                            50,-5.,5.,
-                            50,-5.,5.);
-    incident_map->GetXaxis()->SetTitle("X (cm)");
-    incident_map->GetYaxis()->SetTitle("Y (cm)");
-    incident_map->SetStats(0);
-
-    incident_x_hist = new TH1D("incident x","Incident x",100,-5.,5.);
-    incident_x_hist->GetXaxis()->SetTitle("X (cm)");
-    incident_x_hist->SetFillColor(kRed);
-
-    dose_map = new TH2D("Dose map","Dose Distribution",
-                            500,0.,50.,
-                            200,-10.,10.);
-    dose_map->GetXaxis()->SetTitle("Z (cm)");
-    dose_map->GetYaxis()->SetTitle("X (cm)");
-    dose_map->SetStats(0);
-
-    dose_hist = new TH1D("incident x","Incident x",500,0.,50.);
-    dose_hist->GetXaxis()->SetTitle("Z (cm)");
-    dose_hist->GetYaxis()->SetTitle("Dose (MeV)");
-    dose_hist->SetFillColor(kBlue);
-    dose_hist->SetStats(0);
+    // ntuple
+    ntupl = 0;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 HistoManager::~HistoManager()
 {
-  delete incident_map;
-  delete incident_x_hist;
-  delete dose_map;
-  delete dose_hist;
+    if(rootFile) delete rootFile;
 
-  fInstance=0;
+    myAnalysis = 0;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-HistoManager* HistoManager::getInstance()
+HistoManager* HistoManager::GetAnalysis()
 {
-    if(fInstance==0)
+    if(myAnalysis == 0)
     {
-        fInstance = new HistoManager();
+        myAnalysis = new HistoManager();
     }
-    return fInstance;
+
+    return myAnalysis;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HistoManager::Update()
+void HistoManager::Book()
 {
-    return;
+    // Creating a tree container to handle histograms and ntuples.
+    // This tree is associated to an output file.
+    //
+    G4String fileName = "Test.root";
+    rootFile = new TFile(fileName,"RECREATE");
+    if(!rootFile) {
+      G4cout << " HistoManager::book :"
+             << " problem creating the ROOT TFile "
+             << G4endl;
+      return;
+    }
+
+    histo[1] = new TH1D("1", "Kinetic Energy in EmCalorimeter", 100, 0., 180*CLHEP::MeV);
+    if (!histo[1]) G4cout << "\n can't create histo 1" << G4endl;
+    histo[2] = new TH1D("2", "Deposited Energy in EmCalorimeter", 100, 0., 100*CLHEP::MeV);
+    if (!histo[2]) G4cout << "\n can't create histo 2" << G4endl;
+
+    // create 1 ntuple in subdirectory "tuples"
+    //
+    ntupl = new TTree("101", "EKin & EDep");
+    ntupl->Branch("EKin", &fKinE, "EKin/D");
+    ntupl->Branch("EDep", &fEDep, "EDep/D");
+
+
+
+    G4cout << "\n----> Histogram file is opened in " << fileName << G4endl;
 }
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void HistoManager::Clear()
-{
-    incident_map->Reset();
-    incident_x_hist->Reset();
-    dose_map->Reset();
-    dose_hist->Reset();
-
-    return;
-}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void HistoManager::Save()
 {
-    TFile* file = new TFile("Test_root","RECREATE","Geant4 ROOT analysis");
-    incident_map->Write();
-    incident_x_hist->Write();
-    dose_map->Write();
-    dose_hist->Write();
+    if (rootFile) {
+      rootFile->Write(); // Writing the histograms to the file
+      rootFile->Close(); // and closing the tree (and the file)
+      G4cout << "\n----> Histogram Tree is saved \n" << G4endl;
+    }
+}
 
-    file->Close();
-    delete file;
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+void HistoManager::FillHisto(G4int ih, G4double xbin, G4double weight)
+{
+  if (ih >= MaxHisto) {
+    G4cout << "---> warning from HistoManager::FillHisto() : histo " << ih
+           << " does not exist. (xbin=" << xbin << " weight=" << weight << ")"
+           << G4endl;
     return;
+  }
+ if (histo[ih]) { histo[ih]->Fill(xbin, weight); }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HistoManager::FillIncident(const G4ThreeVector &p)
+void HistoManager::Normalize(G4int ih, G4double fac)
 {
-    if(! incidentFlag){
-        incident_map->Fill(p.x()/cm,p.y()/cm);
-        incident_x_hist->Fill(p.x()/cm);
-
-        incidentFlag = true;
-    }
+  if (ih >= MaxHisto) {
+    G4cout << "---> warning from HistoManager::Normalize() : histo " << ih
+           << " does not exist. (fac=" << fac << ")" << G4endl;
+    return;
+  }
+  if (histo[ih]) histo[ih]->Scale(fac);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void HistoManager::FillDose(const G4ThreeVector &p, G4double dedx)
+void HistoManager::FillNtuple(G4double KinE, G4double EDep)
 {
-    const G4double z0 = 25*cm;
-    const G4double dxy = 10.*mm;
+ fKinE = KinE;
+ fEDep = EDep;
 
-    if(std::abs(p.y())<dxy)
-    {
-        dose_map->Fill((p.z()+z0)/cm,p.x()/cm,dedx/MeV);
-
-        if(std::abs(p.x()<dxy))
-        {
-            dose_hist->Fill((p.z()+z0)/cm,dedx/MeV);
-        }
-    }
-
+  if (ntupl) ntupl->Fill();
 }
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void HistoManager::PrintStatistic()
+{
+  if(histo[1]) {
+    G4cout << "\n ----> print histograms statistic \n" << G4endl;
+
+    G4cout
+    << " Ekin : mean = " << G4BestUnit(histo[1]->GetMean(), "Energy")
+            << " rms = " << G4BestUnit(histo[1]->GetRMS(), "Energy") << G4endl;
+    G4cout
+    << " EDep : mean = " << G4BestUnit(histo[2]->GetMean(), "Energy")
+            << " rms = " << G4BestUnit(histo[2]->GetRMS(), "Energy") << G4endl;
+
+  }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+

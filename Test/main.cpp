@@ -8,6 +8,7 @@
 
 #include "RunAction.h"
 #include "EventAction.h"
+#include "HistoManager.h"
 
 
 #ifdef G4VIS_USE
@@ -54,6 +55,7 @@ int main(int argc,char** argv)
 
   PhysicsList* physics = new PhysicsList();
   runManager->SetUserInitialization(physics);
+
 
   // mandatory user action class
   G4VUserPrimaryGeneratorAction* generator = new PrimaryGeneratorAction(detector);
