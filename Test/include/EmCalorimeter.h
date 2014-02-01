@@ -12,7 +12,7 @@ class EmCalorimeter : public G4VSensitiveDetector
 {
 
   public:
-      EmCalorimeter(G4String name);
+      EmCalorimeter(const G4String& name);
       virtual ~EmCalorimeter();
 
       virtual void Initialize(G4HCofThisEvent*HCE);
@@ -20,6 +20,7 @@ class EmCalorimeter : public G4VSensitiveDetector
       virtual void EndOfEvent(G4HCofThisEvent*HCE);
 
   private:
+      // Data members
       EmCalorimeterHitsCollection* fHitsCollection;
       G4int fHitsCollectionID;
 };

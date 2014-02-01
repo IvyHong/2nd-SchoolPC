@@ -30,8 +30,8 @@ TSLCollimator::TSLCollimator()
 {
    fApertureDiameter=102*mm;
    fCollimatorWidth =1200*mm;
-   fCollimatorLength=1000*mm;
    fCollimatorHeight=2402*mm;
+   fCollimatorLength=1000*mm;
 }
 
 // Constructor with parameters
@@ -78,11 +78,13 @@ void TSLCollimator::TSLCollimatorSetup(G4VPhysicalVolume *MotherPV)
                            fCollimatorHeight/2,
                            fCollimatorLength/2);
 
-      G4SubtractionSolid* CollimatorSolid= new G4SubtractionSolid("CollimatorBox-CylinderTube",
-                                                                  CollimatorBox,
-                                                                  CylinderTube,
-                                                                  0,
-                                                                  fApertureMov); //Moving aperture towards +Y direction
+      G4SubtractionSolid* CollimatorSolid=
+              new G4SubtractionSolid("CollimatorBox-CylinderTube",
+                                     CollimatorBox,
+                                     CylinderTube,
+                                     0,
+                                     fApertureMov); //Moving aperture towards +Y direction
+
       fCollimatorLog = new G4LogicalVolume (CollimatorSolid,fCollimatorMat,"Collimator",0,0,0);
       fCollimatorPhy = new G4PVPlacement
                         (fCollimatorRot,

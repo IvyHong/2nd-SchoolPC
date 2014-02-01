@@ -128,29 +128,29 @@ const std::map<G4String,G4AttDef>* EmCalorimeterHit::GetAttDefs() const
     = G4AttDefStore::GetInstance("EmCalorimeterHit",isNew);
   if (isNew) {
     G4String HitType("HitType");
-    (*store)[HitType] = G4AttDef(HitType,"Hit Type","Physics","","G4String");
+    (*store)[HitType] = G4AttDef(HitType,"Hit Type","Bookkeeping","","G4String");
 
     G4String ID("ID");
-    (*store)[ID] = G4AttDef(ID,"ID","Physics","","G4int");
+    (*store)[ID] = G4AttDef(ID,"ID","Bookkeeping","","G4int");
 
     G4String Column("Column");
-    (*store)[Column] = G4AttDef(Column,"Column ID", "Physics","","G4int");
+    (*store)[Column] = G4AttDef(Column,"Column ID", "Bookkeeping","","G4int");
 
     G4String Row("Row");
-    (*store)[Row] = G4AttDef(Row,"Row ID", "Physics","","G4int");
+    (*store)[Row] = G4AttDef(Row,"Row ID", "Bookkeeping","","G4int");
 
     G4String DepEnergy("DepEnergy");
     (*store)[DepEnergy] = G4AttDef(DepEnergy,"Energy Deposited","Physics","G4BestUnit","G4double");
 
-    G4String Energy("Energy");
-    (*store)[Energy] = G4AttDef(Energy,"Kinetic Energy","Physics","G4BestUnit","G4double");
+    G4String KinEnergy("KinEnergy");
+    (*store)[KinEnergy] = G4AttDef(KinEnergy,"Kinetic Energy","Physics","G4BestUnit","G4double");
 
     G4String Pos("Pos");
     (*store)[Pos] = G4AttDef(Pos, "Position",
                       "Physics","G4BestUnit","G4ThreeVector");
 
     G4String LVol("LVol");
-    (*store)[LVol] = G4AttDef(LVol,"Logical Volume","Physics","","G4String");
+    (*store)[LVol] = G4AttDef(LVol,"Logical Volume","Bookkeeping","","G4String");
   }
   return store;
 }
@@ -168,7 +168,7 @@ std::vector<G4AttValue>* EmCalorimeterHit::CreateAttValues() const
     (G4AttValue("DepEnergy",G4BestUnit(fEdep,"DepEnergy"),""));
 
   values->push_back
-    (G4AttValue("Energy",G4BestUnit(fKinE,"Energy"),""));
+    (G4AttValue("KinEnergy",G4BestUnit(fKinE,"KinEnergy"),""));
 
   values->push_back
     (G4AttValue("Pos",G4BestUnit(fPos,"Length"),""));
@@ -185,7 +185,9 @@ std::vector<G4AttValue>* EmCalorimeterHit::CreateAttValues() const
 
 void EmCalorimeterHit::Print()
 {
-  G4cout << " Cell[" << fCellID << "] " << fEdep/MeV << " (MeV)" << G4endl;
+  G4cout << " Particle Name __ Cell[" << fCellID << "] " << fPD->GetParticleName() << G4endl;
+
+  G4cout << " Deposited Energy __ Cell[" << fCellID << "] " << fEdep/MeV << " (MeV)" << G4endl;
 
   G4cout << " Kinetic Energy __ Cell[" << fCellID << "]"  << fKinE/MeV << " (MeV)" << G4endl;
 }

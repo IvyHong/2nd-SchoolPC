@@ -9,14 +9,18 @@
 #include "G4ios.hh"
 
 Monitor::Monitor(G4String name)
-:G4VSensitiveDetector(name)
+    : G4VSensitiveDetector(name),
+      fHitsCollectionID (-1)
 {
   G4String HCname;
   collectionName.insert(HCname="MonitorCollection");
-  fHitsCollectionID = -1;
+
 }
 
-Monitor::~Monitor(){;}
+Monitor::~Monitor()
+{
+
+}
 
 void Monitor::Initialize(G4HCofThisEvent*HCE)
 {
@@ -30,12 +34,26 @@ void Monitor::Initialize(G4HCofThisEvent*HCE)
   // Add collection to the event
   //
   HCE->AddHitsCollection(fHitsCollectionID,fHitsCollection);
+
 }
 
 G4bool Monitor::ProcessHits(G4Step* aStep,G4TouchableHistory* /*ROhist*/)
 {
-  // Limited by Geometry Boundary
-  //
+    // Get Material
+    //
+    G4String thisVolume = aStep->GetTrack()->GetVolume()->GetName() ;
+    G4String particleName = aStep->GetTrack()->GetDefinition()->GetParticleName();
+    G4double charge = aStep->GetTrack()->GetDefinition()->GetPDGCharge();
+
+    if (thisVolume != "Monitor_Physical") return false;
+    if (particleName != "neutron" ) return false;
+    if (charge != 0.) return false;
+
+    G4double edep = aStep->GetTotalEnergyDeposit();
+    if(edep<=0.) return false;
+
+    // Limited by Geometry Boundary
+    //
     if(aStep->GetPreStepPoint()->GetStepStatus() == fGeomBoundary)
     {
 
@@ -49,7 +67,7 @@ G4bool Monitor::ProcessHits(G4Step* aStep,G4TouchableHistory* /*ROhist*/)
         G4VPhysicalVolume* theMotherPhysical = theTouchable->GetVolume(); // here 0 means world is mother
         aTrans.Invert();
 
-        G4ThreeVector Position  = aTrans.NetRotation() * (aStep->GetPreStepPoint()->GetPosition() - aTrans.NetTranslation());
+        G4ThreeVector Position = aTrans.NetRotation() * (aStep->GetPreStepPoint()->GetPosition() - aTrans.NetTranslation());
         G4ThreeVector momentumD = aTrans.NetRotation() * aStep->GetPreStepPoint()->GetMomentumDirection();
         G4int copyNo = theMotherPhysical->GetCopyNo();
         G4ParticleDefinition* pd = aStep->GetTrack()->GetDefinition();
@@ -72,7 +90,7 @@ G4bool Monitor::ProcessHits(G4Step* aStep,G4TouchableHistory* /*ROhist*/)
         return true;
     }
 
-  return true;
+    return true;
 }
 
 void Monitor::EndOfEvent(G4HCofThisEvent* /*HCE*/)

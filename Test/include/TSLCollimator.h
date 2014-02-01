@@ -39,8 +39,8 @@ public:
     inline G4Material* GetCollimatorMaterial () { return fCollimatorMat; }
 
     inline G4double GetCollimatorWidth () const { return fCollimatorWidth;}
-    inline G4double GetCollimatorLength () const { return fCollimatorLength;}
     inline G4double GetCollimatorHeight () const { return fCollimatorHeight;}
+    inline G4double GetCollimatorLength () const { return fCollimatorLength;}
 
 private:
 

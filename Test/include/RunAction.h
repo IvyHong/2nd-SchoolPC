@@ -23,7 +23,6 @@ public:
 private:
 
        G4Timer*      myTimer;
-
 };
 
 #endif // RUNACTION_H

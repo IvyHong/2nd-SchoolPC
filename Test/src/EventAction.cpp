@@ -1,5 +1,6 @@
 #include "EventAction.h"
 #include "HistoManager.h"
+#include "RunAction.h"
 
 #include "G4Event.hh"
 #include "G4EventManager.hh"
@@ -17,12 +18,14 @@
 
 
 EventAction::EventAction()
-{}
+{
+    fPrintModulo = 100;
+}
 
 EventAction::~EventAction()
 {}
 
-void EventAction::BeginOfEventAction(const G4Event* )
+void EventAction::BeginOfEventAction(const G4Event* evt)
 {
     G4SDManager* SDman = G4SDManager::GetSDMpointer();
 
@@ -32,11 +35,15 @@ void EventAction::BeginOfEventAction(const G4Event* )
     // Getting code for HitsCollection of Silicon Monitor
     //
     fHitsCollectionID_monitor = SDman->GetCollectionID("MonitorCollection");
+
+    G4int evtNb = evt->GetEventID();
+    if (evtNb%fPrintModulo == 0)
+      G4cout << "\n---> Begin of event: " << evtNb << G4endl;
+
 }
 
 void EventAction::EndOfEventAction(const G4Event* evt)
 {
-    HistoManager* myAnalysis = HistoManager::GetAnalysis();
 
     // HCE : HitsCollectionOfThisEvent
     G4HCofThisEvent * HCE = evt->GetHCofThisEvent();
@@ -54,10 +61,7 @@ void EventAction::EndOfEventAction(const G4Event* evt)
            for ( i=0 ; i<100 ; i++ ) {
               EmCalorimeterHit* aHit = (*hitsCollection)[i];
 
-              myAnalysis->FillHisto(1,aHit->GetKineticEnergy());
-              myAnalysis->FillHisto(2,aHit->GetEdep());
               totalEnergy += aHit->GetEdep();
-
               aHit->Print();
            }
         }

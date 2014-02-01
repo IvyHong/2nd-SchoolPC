@@ -12,6 +12,7 @@
 #include "G4LogicalVolume.hh"
 #include "G4SystemOfUnits.hh"
 
+
 G4Allocator<MonitorHit> MonitorHitAllocator;
 
 MonitorHit::MonitorHit()
@@ -84,9 +85,14 @@ const std::map<G4String,G4AttDef>* MonitorHit::GetAttDefs() const
     G4String Time("Time");
     (*store)[Time] = G4AttDef(Time,"Time","Physics","G4BestUnit","G4double");
 
+    G4String Energy("Energy");
+    (*store)[Energy] = G4AttDef(Energy, "Kinetic Energy", "Physics",
+                "G4BestUnit", "G4double");
+
     G4String Pos("Pos");
     (*store)[Pos] = G4AttDef(Pos, "Position",
                       "Physics","G4BestUnit","G4ThreeVector");
+
   }
   return store;
 }
@@ -104,6 +110,9 @@ std::vector<G4AttValue>* MonitorHit::CreateAttValues() const
     (G4AttValue("Time",G4BestUnit(fTime,"Time"),""));
 
   values->push_back
+    (G4AttValue("Energy", G4BestUnit(fKinEnergy, "Energy"), ""));
+
+  values->push_back
     (G4AttValue("Pos",G4BestUnit(fWorldPos,"Length"),""));
 
   return values;
@@ -112,11 +121,12 @@ std::vector<G4AttValue>* MonitorHit::CreateAttValues() const
 void MonitorHit::Print()
 {
    G4cout << "*********************************************************" << G4endl;
-   G4cout << " No.[" << fNoID << "] : time " << fTime/ns << '\t'
-          << "Incidence Particle Name : " << fPD->GetParticleName() << '\t'
-          << "Incidence Particle Kinetic Energy : " << fKinEnergy/MeV << " MeV" << G4endl;
-
-   G4cout << "Incidence Position in Monitor" << fWorldPos/mm << " mm" << '\n'
-          << "Incidence Direction" << fMomentumD << G4endl;
+   G4cout << "Time : " << fTime/ns << '\n'
+          << "Incidence Particle Name and Kinetic Energy " << fPD->GetParticleName()
+          << " " << fKinEnergy/MeV << " MeV" << G4endl;
+   G4cout << "Insidence position in monitor [" << fNoID << "] : " << fWorldPos/mm
+          << " in mm" << G4endl;
+   G4cout << "Incidence Direction " << fMomentumD << G4endl;
    G4cout << "*********************************************************" << G4endl;
 }
+

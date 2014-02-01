@@ -19,7 +19,9 @@ class Monitor : public G4VSensitiveDetector
 
   private:
       MonitorHitsCollection * fHitsCollection;
+
       G4int fHitsCollectionID;
+
 };
 
 

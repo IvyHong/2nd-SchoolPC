@@ -48,7 +48,7 @@ DetectorConstruction::~DetectorConstruction()
   delete fEMcalorimeterVisAtt;
   delete fCellVisAtt;
   delete fTargetVisAtt;
-
+  delete fMonitorVisAtt;
 }
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
@@ -56,7 +56,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   ConstructMaterials();
 
-  // geometries --------------------------------------------------------------
+  /// ##################################################################
+  // geometries
   // experimental hall (world volume)
   G4VSolid* worldSolid = new G4Box("worldBox",10.*m,3.*m,10.*m);
   G4LogicalVolume* fWorldLog
@@ -64,7 +65,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4VPhysicalVolume* fWorldPhy
     = new G4PVPlacement(0,G4ThreeVector(),fWorldLog,"fWorldPhy",0,0,0);
 
-  // target Tube --------------------------------------------------------------
+  /// ##################################################################
+  // target Tube
   //
   const G4double TargetInR=0.*cm;
   const G4double TargetOutR=2.5*cm;
@@ -76,10 +78,15 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                      TargetHeight/2,
                                      0.,360.*deg);
   G4LogicalVolume* targetLogical
-    = new G4LogicalVolume(targetSolid,fAir,"targetLogical",0,0,0);
+    = new G4LogicalVolume(targetSolid,fTungsten,"targetLogical",0,0,0);
   new G4PVPlacement(0,G4ThreeVector(0.,0.,TargetHeight/2),
                     targetLogical,"targetPhysical",fWorldLog,0,0);
 
+  // set "user limits" for drawing smooth curve
+  G4UserLimits* userLimits = new G4UserLimits(5.0*cm);
+  targetLogical->SetUserLimits(userLimits);
+
+  /// ##################################################################
   //---- Collimator wtih a hole inside--------------------------//
   // Collimator, rectangular solid,full length z= 1 m, x=1.2 m, y=2.402 m;
   // Standard hole or aperture, diamater =10.2cm, length =1 m, Distance =867mm;
@@ -106,9 +113,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                           collimatorRot);
 
 
-//  // set "user limits" for drawing smooth curve
-//  G4UserLimits* userLimits = new G4UserLimits(5.0*cm);
-//  targetLogical->SetUserLimits(userLimits);
+
 
   ////////////////////////////////////////////////////////////////////////
   // Create silicon calorimeter
@@ -155,39 +160,40 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                         100,                // Number of replicas
                         cellParam);         // Parameterisation
 
-
+  /// Monitor Sensitive Detector
   ////////////////////////////////////////////////////////////////////////
-  // Silicon Monitor
+  // Monitor
 
-  G4VSolid* MonitorSolid = new G4Tubs("Monitor_Solid", // Name
-                                             0.*cm,                  // Inner radius
-                                             5.1*cm,                 // Outer radius
-                                             0.005*cm,               // Half length in z
-                                             0.*deg,                 // Starting phi angle
-                                             360.*deg);              // Segment angle
+  G4VSolid* fMonitorSolid =
+          new G4Tubs("Monitor_Solid",        // Name
+                     0.*cm,                  // Inner radius
+                     5.1*cm,                 // Outer radius
+                     0.005*cm,               // Half length in z
+                     0.*deg,                 // Starting phi angle
+                     360.*deg);              // Segment angle
 
-  G4LogicalVolume* MonitorLogical =
-    new G4LogicalVolume(MonitorSolid,       // Solid
-                        fAir,                      // Material
-                        "Monitor_Logical"); // Name
+  G4LogicalVolume* fMonitorLogical =
+          new G4LogicalVolume(fMonitorSolid,      // Solid
+                              fAir,               // Material
+                              "Monitor_Logical"); // Name
 
 
   for(G4int k=0;k<2;k++)
   {
       G4double MonitorZMov = 0.*cm;
-      if(k==0) MonitorZMov = -0.005*cm;
+      if(k==0) MonitorZMov = 0.005*cm+TargetHeight;
       if(k==1) MonitorZMov = 250.*cm;
-      new G4PVPlacement(0,                                   // Rotation matrix pointer
-                    G4ThreeVector(0.,0.,MonitorZMov),        // Translation vector
-                    MonitorLogical,                   // Logical volume
-                    "Monitor_Physical",               // Name
-                    fWorldLog,                               // Mother volume
-                    false,                                   // Unused boolean
-                    k);                                      // Copy number
+      new G4PVPlacement(0,                              // Rotation matrix pointer
+                    G4ThreeVector(0.,0.,MonitorZMov),   // Translation vector
+                    fMonitorLogical,                    // Logical volume
+                    "Monitor_Physical",                 // Name
+                    fWorldLog,                          // Mother volume
+                    false,                              // Unused boolean
+                    k);                                 // Copy number
   }
 
-
-  ////////////////////////////////////////////////////////////////////////
+  /// ##################################################################
+  //////////////////////////////////////////////////////////////////////
   // Defining sensitive detector
   // Create a new Monitor & EMcalorimeter sensitive detector
 
@@ -207,7 +213,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   cellLogical->SetSensitiveDetector(EMcalorimeter);
 
   // Create a new Monitor sensitive detector
-  G4VSensitiveDetector* monitor = new Monitor("SiMonitor");
+  G4VSensitiveDetector* monitor = new Monitor("Monitor");
 
   SDman->AddNewDetector(monitor);
 
@@ -215,10 +221,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4SDManager::GetSDMpointer()->AddNewDetector(monitor);
 
   // Attach detector to volume defining calorimeter cells
-  MonitorLogical->SetSensitiveDetector(monitor);
+  fMonitorLogical->SetSensitiveDetector(monitor);
 
-
-  // visualization attributes ------------------------------------------------
+  /// ##################################################################
+  //////////////////////////////////////////////////////////////////////
+  // Visualization Attributes
 
   fWorldVisAtt = new G4VisAttributes(G4Colour(1.0,1.0,1.0));
   fWorldVisAtt->SetVisibility(false);
@@ -233,7 +240,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   collimatorAttributes->SetForceSolid(true);
   if(fCollimatorGeometry)
   {
-      fCollimatorGeometry->GetPhysicalVolume()->GetLogicalVolume()->SetVisAttributes(collimatorAttributes);
+      fCollimatorGeometry->GetPhysicalVolume()->GetLogicalVolume()
+              ->SetVisAttributes(collimatorAttributes);
   }
 
   fCellVisAtt = new G4VisAttributes(G4Colour(0.9,0.9,0.0));
@@ -246,13 +254,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // Silicon Monitor  - cyan
   fMonitorVisAtt = new G4VisAttributes(G4Colour::Cyan());
   fMonitorVisAtt->SetForceSolid(true);
-  MonitorLogical->SetVisAttributes(fMonitorVisAtt);
+  fMonitorLogical->SetVisAttributes(fMonitorVisAtt);
 
-
-  // return the world physical volume ----------------------------------------
-
-//  G4cout << G4endl << "The geometrical tree defined are : " << G4endl << G4endl;
-//  DumpGeometricalTree(fWorldPhy);
+  /// ##################################################################
+  // return the world physical volume
 
   return fWorldPhy;
 }

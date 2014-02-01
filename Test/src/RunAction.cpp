@@ -28,19 +28,10 @@ RunAction::~RunAction()
 
 void RunAction::BeginOfRunAction(const G4Run* aRun)
 {
-    HistoManager* fanalysis = HistoManager::GetAnalysis();
-    fanalysis->Book();
-
-
     G4cout <<"### Run "<< aRun->GetRunID() <<" start.." << G4endl;
     myTimer->Start();
 
-    //inform the runManager to save random number seed
-    G4RunManager::GetRunManager()->SetRandomNumberStore(false);
-
 }
-
-
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -53,15 +44,5 @@ void RunAction::EndOfRunAction(const G4Run* aRun)
     myTimer->Stop();
     G4cout << "The number of event = " << NbOfEvents
            << " " << *myTimer << G4endl;
-    // Write histograms to file
-    G4cout << "Close and Save Histograms" << G4endl;
-    G4cout << "### Run " << aRun->GetRunID() << " ended." <<
-              "*****************************************" << G4endl;
-
-    HistoManager* fanalysis = HistoManager::GetAnalysis();
-
-    fanalysis->PrintStatistic();
-    fanalysis->Save();
-
 
 }

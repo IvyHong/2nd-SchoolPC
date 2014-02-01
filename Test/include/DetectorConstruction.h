@@ -10,12 +10,13 @@ class G4VPhysicalVolume;
 class G4Material;
 class G4VSensitiveDetector;
 class G4VisAttributes;
+class G4VSolid;
 
 class TSLCollimator;
 
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
-  public:
+public:
     // Default Constructor
     //
     DetectorConstruction();
@@ -28,7 +29,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     //
     virtual G4VPhysicalVolume* Construct();
 
-  private:
+
+private:
 
     // Helper Methods
     //

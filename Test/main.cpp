@@ -5,7 +5,6 @@
 #include "DetectorConstruction.h"
 #include "PhysicsList.h"
 #include "PrimaryGeneratorAction.h"
-
 #include "RunAction.h"
 #include "EventAction.h"
 #include "HistoManager.h"

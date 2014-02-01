@@ -14,20 +14,19 @@
 class TFile;
 class TTree;
 class TH1D;
-class TH2D;
 
 const G4int MaxHisto = 5;
 
 class HistoManager
 {
+
 private:
-    static HistoManager* myAnalysis;
-    HistoManager();  //protected
+  HistoManager();
 
 public:
 
   virtual ~HistoManager();
-  static HistoManager* GetAnalysis();
+  static HistoManager* getInstance();
 
   void Book();
   void Save();
@@ -41,12 +40,14 @@ public:
 
 private:
 
+  static HistoManager* fInstance;
+
   TFile* rootFile;
   TH1D*  histo[MaxHisto];
   TTree* ntupl;
 
-  G4double fKinE;
-  G4double fEDep;
+  G4double fECalorimeter;
+  G4double fEMonitor;
 
 };
 

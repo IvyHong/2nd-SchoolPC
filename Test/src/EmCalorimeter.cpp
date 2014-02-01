@@ -7,7 +7,7 @@
 #include "G4SDManager.hh"
 #include "G4ios.hh"
 
-EmCalorimeter::EmCalorimeter(G4String name)
+EmCalorimeter::EmCalorimeter(const G4String &name)
 :G4VSensitiveDetector(name)
 {
   G4String HCname;
@@ -28,7 +28,7 @@ void EmCalorimeter::Initialize(G4HCofThisEvent*HCE)
   {
       fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID(fHitsCollection);
   }
-
+  // Add collection to the event
   HCE->AddHitsCollection(fHitsCollectionID,fHitsCollection);
 
   // fill calorimeter hits with zero energy deposition
@@ -41,6 +41,14 @@ void EmCalorimeter::Initialize(G4HCofThisEvent*HCE)
 
 G4bool EmCalorimeter::ProcessHits(G4Step*aStep,G4TouchableHistory* /*ROhist*/)
 {
+  // Get Material
+
+  G4String thisVolume = aStep->GetTrack()->GetVolume()->GetName() ;
+  G4String particleName = aStep->GetTrack()->GetDefinition()->GetParticleName();
+
+  if (thisVolume != "Cell_Physical") return false;
+  if (particleName != "neutron" ) return false;
+
   // Accumulating hit data
   // Get energy deposited in this step
   G4double edep = aStep->GetTotalEnergyDeposit();
@@ -75,8 +83,9 @@ G4bool EmCalorimeter::ProcessHits(G4Step*aStep,G4TouchableHistory* /*ROhist*/)
 
   // Kinetic energy
   //
-  aHit->SetKineticEnergy(preStepPoint->GetKineticEnergy());
-
+  aHit->SetKineticEnergy(aStep->GetTrack()->GetKineticEnergy());
+  // Particle
+  aHit->SetParticleDef(aStep->GetTrack()->GetDefinition());
   // Accumulate energy deposition
   aHit->AddEdep(edep);
 
